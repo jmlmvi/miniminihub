@@ -12,6 +12,7 @@ import (
 
 	"github.com/jmlmvi/miniminihub/internal/config"
 	"github.com/jmlmvi/miniminihub/internal/mop"
+	"github.com/jmlmvi/miniminihub/internal/store"
 	"github.com/jmlmvi/miniminihub/internal/worker"
 )
 
@@ -39,15 +40,22 @@ func run() error {
 	}
 	log.Info("miniminihub starting",
 		"version", version, "slug", cfg.Slug, "id", cfg.MiniminihubID,
-		"parent", cfg.ParentEndpoint, "mode", cfg.Mode, "roles", cfg.Roles)
+		"parent", cfg.ParentEndpoint, "mode", cfg.Mode, "roles", cfg.Roles,
+		"mtls", cfg.TLS.Enabled, "store", cfg.StorePath)
+
+	st, err := store.Open(cfg.StorePath)
+	if err != nil {
+		return fmt.Errorf("open store: %w", err)
+	}
+	defer func() { _ = st.Close() }()
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
-	deps := mop.Deps{Cfg: cfg, Log: log}
+	deps := mop.Deps{Cfg: cfg, Log: log, Store: st}
 
-	// Phase 0 : seul le TunnelWorker. Les rôles (proxy/smtp/jobs) viennent ensuite.
-	sup := mop.New(deps, worker.NewTunnel())
+	// Noyau : TunnelWorker (100) + StateWorker (200). Rôles proxy/smtp/jobs à venir.
+	sup := mop.New(deps, worker.NewTunnel(), worker.NewState())
 
 	return sup.Run(ctx)
 }

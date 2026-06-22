@@ -8,14 +8,16 @@ import (
 	"time"
 
 	"github.com/jmlmvi/miniminihub/internal/mop"
+	"github.com/jmlmvi/miniminihub/internal/store"
 	"github.com/jmlmvi/miniminihub/internal/tunnel"
 	pb "github.com/jmlmvi/miniminihub/proto/mmhpb"
 )
 
 // TunnelWorker maintient le canal sortant : heartbeat + pollcommand + reconnexion.
-// Toujours actif (priorité 100). Phase 0 = walking skeleton.
+// Toujours actif (priorité 100).
 type TunnelWorker struct {
 	log    *slog.Logger
+	store  *store.Store
 	client *tunnel.Client
 	hbMs   int
 }
@@ -28,8 +30,9 @@ func (w *TunnelWorker) StartPriority() int { return 100 }
 
 func (w *TunnelWorker) Init(_ context.Context, d mop.Deps) error {
 	w.log = d.Log.With("worker", "tunnel")
+	w.store = d.Store
 	w.hbMs = d.Cfg.HeartbeatMs
-	w.client = tunnel.New(d.Cfg.ParentEndpoint, d.Cfg.MiniminihubID, d.Cfg.Slug, d.Log)
+	w.client = tunnel.New(d.Cfg.ParentEndpoint, d.Cfg.MiniminihubID, d.Cfg.Slug, d.Cfg.TLS, d.Log)
 	return nil
 }
 
@@ -37,9 +40,12 @@ func (w *TunnelWorker) Init(_ context.Context, d mop.Deps) error {
 // du MOP gère le backoff inter-session ; ici on couvre la durée d'une session).
 func (w *TunnelWorker) Run(ctx context.Context) error {
 	if err := w.client.Connect(ctx); err != nil {
+		w.record("tunnel_connect_failed", err.Error())
 		return err
 	}
 	defer w.client.Close()
+	n, _ := w.store.Incr("tunnel_connects")
+	w.record("tunnel_connected", fmt.Sprintf("connect #%d", n))
 	return w.session(ctx)
 }
 
@@ -51,7 +57,6 @@ func (w *TunnelWorker) session(ctx context.Context) error {
 
 	errCh := make(chan error, 2)
 
-	// Heartbeat périodique (R02/R05 : borné par context, select sur Done).
 	go func() {
 		ticker := time.NewTicker(time.Duration(w.hbMs) * time.Millisecond)
 		defer ticker.Stop()
@@ -63,11 +68,12 @@ func (w *TunnelWorker) session(ctx context.Context) error {
 			if err != nil {
 				return err
 			}
+			total, _ := w.store.Incr("heartbeats")
 			w.log.Info("heartbeat ack", "seq", seq, "accepted", resp.Accepted,
-				"next_interval_ms", resp.NextIntervalMs, "trace_id", resp.TraceId)
+				"next_interval_ms", resp.NextIntervalMs, "trace_id", resp.TraceId, "total_persisted", total)
 			return nil
 		}
-		if err := send(); err != nil { // premier battement immédiat
+		if err := send(); err != nil {
 			errCh <- fmt.Errorf("heartbeat: %w", err)
 			return
 		}
@@ -84,7 +90,6 @@ func (w *TunnelWorker) session(ctx context.Context) error {
 		}
 	}()
 
-	// PollCommand : réception des commandes poussées par le parent.
 	go func() {
 		errCh <- w.client.Poll(sctx, w.handleCommand)
 	}()
@@ -97,12 +102,22 @@ func (w *TunnelWorker) session(ctx context.Context) error {
 	}
 }
 
-// handleCommand traite une commande descendue (Phase 0 : Ping no-op).
+// handleCommand traite une commande descendue (Phase 0/1 : Ping no-op).
 func (w *TunnelWorker) handleCommand(cmd *pb.Command) {
 	switch p := cmd.Payload.(type) {
 	case *pb.Command_Ping:
-		w.log.Info("PING received from parent", "command_id", cmd.CommandId, "note", p.Ping.Note)
+		n, _ := w.store.Incr("pings_received")
+		w.record("ping_received", cmd.CommandId)
+		w.log.Info("PING received from parent", "command_id", cmd.CommandId,
+			"note", p.Ping.Note, "total_persisted", n)
 	default:
 		w.log.Warn("unknown command", "command_id", cmd.CommandId)
+	}
+}
+
+// record journalise un événement dans le store local (best-effort).
+func (w *TunnelWorker) record(kind, detail string) {
+	if err := w.store.AppendEvent(time.Now().UnixMilli(), kind, detail); err != nil {
+		w.log.Warn("store append failed", "kind", kind, "err", err)
 	}
 }

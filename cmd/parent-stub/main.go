@@ -8,6 +8,8 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"log/slog"
 	"net"
 	"os"
@@ -17,6 +19,7 @@ import (
 	"time"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 
 	pb "github.com/jmlmvi/miniminihub/proto/mmhpb"
 )
@@ -68,6 +71,26 @@ func (s *server) PollCommand(req *pb.PollRequest, stream pb.MiniMiniHubControl_P
 	}
 }
 
+// mtlsCreds construit des credentials serveur exigeant un cert client valide.
+func mtlsCreds(certPath, keyPath, caPath string) (credentials.TransportCredentials, error) {
+	cert, err := tls.LoadX509KeyPair(certPath, keyPath)
+	if err != nil {
+		return nil, err
+	}
+	caPEM, err := os.ReadFile(caPath)
+	if err != nil {
+		return nil, err
+	}
+	pool := x509.NewCertPool()
+	pool.AppendCertsFromPEM(caPEM)
+	return credentials.NewTLS(&tls.Config{
+		Certificates: []tls.Certificate{cert},
+		ClientAuth:   tls.RequireAndVerifyClientCert,
+		ClientCAs:    pool,
+		MinVersion:   tls.VersionTLS12,
+	}), nil
+}
+
 func main() {
 	log := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
 
@@ -81,7 +104,20 @@ func main() {
 		os.Exit(1)
 	}
 
-	grpcSrv := grpc.NewServer()
+	var opts []grpc.ServerOption
+	if certPath := os.Getenv("TLS_CERT"); certPath != "" {
+		creds, err := mtlsCreds(certPath, os.Getenv("TLS_KEY"), os.Getenv("TLS_CA"))
+		if err != nil {
+			log.Error("mtls setup", "err", err)
+			os.Exit(1)
+		}
+		opts = append(opts, grpc.Creds(creds))
+		log.Info("mTLS enabled (RequireAndVerifyClientCert)")
+	} else {
+		log.Info("plaintext mode (no TLS_CERT set)")
+	}
+
+	grpcSrv := grpc.NewServer(opts...)
 	pb.RegisterMiniMiniHubControlServer(grpcSrv, &server{log: log, pingSec: 15})
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)

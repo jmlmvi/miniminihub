@@ -7,12 +7,14 @@ import (
 	"log/slog"
 
 	"github.com/jmlmvi/miniminihub/internal/config"
+	"github.com/jmlmvi/miniminihub/internal/store"
 )
 
 // Deps = dépendances injectées aux workers (jamais de global mutable — R03).
 type Deps struct {
-	Cfg *config.Config
-	Log *slog.Logger
+	Cfg   *config.Config
+	Log   *slog.Logger
+	Store *store.Store
 }
 
 // Worker = unité fonctionnelle autonome (équivalent Go d'un Worker Socle V005).

@@ -4,13 +4,18 @@ package tunnel
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"fmt"
 	"log/slog"
+	"os"
 	"time"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 
+	"github.com/jmlmvi/miniminihub/internal/config"
 	pb "github.com/jmlmvi/miniminihub/proto/mmhpb"
 )
 
@@ -19,6 +24,7 @@ type Client struct {
 	endpoint string
 	id       string
 	slug     string
+	tlsCfg   config.TLSConfig
 	log      *slog.Logger
 
 	conn *grpc.ClientConn
@@ -26,27 +32,55 @@ type Client struct {
 }
 
 // New prépare un client (ne se connecte pas encore).
-func New(endpoint, id, slug string, log *slog.Logger) *Client {
+func New(endpoint, id, slug string, tlsCfg config.TLSConfig, log *slog.Logger) *Client {
 	return &Client{
 		endpoint: endpoint,
 		id:       id,
 		slug:     slug,
+		tlsCfg:   tlsCfg,
 		log:      log.With("component", "tunnel"),
 	}
 }
 
-// Connect ouvre le canal gRPC sortant (plaintext en Phase 0).
+// Connect ouvre le canal gRPC sortant (mTLS si activé, sinon plaintext).
 func (c *Client) Connect(ctx context.Context) error {
-	conn, err := grpc.NewClient(c.endpoint,
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
-	)
+	creds, err := c.transportCreds()
+	if err != nil {
+		return err
+	}
+	conn, err := grpc.NewClient(c.endpoint, grpc.WithTransportCredentials(creds))
 	if err != nil {
 		return fmt.Errorf("dial %s: %w", c.endpoint, err)
 	}
 	c.conn = conn
 	c.ctrl = pb.NewMiniMiniHubControlClient(conn)
-	c.log.Info("tunnel connected", "endpoint", c.endpoint)
+	c.log.Info("tunnel connected", "endpoint", c.endpoint, "mtls", c.tlsCfg.Enabled)
 	return nil
+}
+
+// transportCreds construit les credentials gRPC (mTLS ou insecure).
+func (c *Client) transportCreds() (credentials.TransportCredentials, error) {
+	if !c.tlsCfg.Enabled {
+		return insecure.NewCredentials(), nil
+	}
+	cert, err := tls.LoadX509KeyPair(c.tlsCfg.CertPath, c.tlsCfg.KeyPath)
+	if err != nil {
+		return nil, fmt.Errorf("load client keypair: %w", err)
+	}
+	caPEM, err := os.ReadFile(c.tlsCfg.CAPath)
+	if err != nil {
+		return nil, fmt.Errorf("read CA: %w", err)
+	}
+	pool := x509.NewCertPool()
+	if !pool.AppendCertsFromPEM(caPEM) {
+		return nil, fmt.Errorf("CA %s: no certificate parsed", c.tlsCfg.CAPath)
+	}
+	return credentials.NewTLS(&tls.Config{
+		Certificates: []tls.Certificate{cert},
+		RootCAs:      pool,
+		ServerName:   c.tlsCfg.ServerName,
+		MinVersion:   tls.VersionTLS12,
+	}), nil
 }
 
 // Close ferme le canal.
