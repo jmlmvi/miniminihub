@@ -7,17 +7,23 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/jmlmvi/miniminihub/internal/bus"
 	"github.com/jmlmvi/miniminihub/internal/mop"
 	"github.com/jmlmvi/miniminihub/internal/store"
 	"github.com/jmlmvi/miniminihub/internal/tunnel"
 	pb "github.com/jmlmvi/miniminihub/proto/mmhpb"
 )
 
-// TunnelWorker maintient le canal sortant : heartbeat + pollcommand + reconnexion.
+// TopicEgress = topic bus des demandes d'ouverture de sortie (proxy).
+const TopicEgress = "egress"
+
+// TunnelWorker maintient le canal sortant partagé : heartbeat + pollcommand.
+// Le canal gRPC lui-même est connecté dans main et partagé via Deps.Tunnel.
 // Toujours actif (priorité 100).
 type TunnelWorker struct {
 	log    *slog.Logger
 	store  *store.Store
+	bus    *bus.Bus
 	client *tunnel.Client
 	hbMs   int
 }
@@ -31,21 +37,17 @@ func (w *TunnelWorker) StartPriority() int { return 100 }
 func (w *TunnelWorker) Init(_ context.Context, d mop.Deps) error {
 	w.log = d.Log.With("worker", "tunnel")
 	w.store = d.Store
+	w.bus = d.Bus
+	w.client = d.Tunnel
 	w.hbMs = d.Cfg.HeartbeatMs
-	w.client = tunnel.New(d.Cfg.ParentEndpoint, d.Cfg.MiniminihubID, d.Cfg.Slug, d.Cfg.TLS, d.Log)
 	return nil
 }
 
-// Run connecte le tunnel et le maintient ; reconnecte sur erreur (la supervision
-// du MOP gère le backoff inter-session ; ici on couvre la durée d'une session).
+// Run lance une session heartbeat + pollcommand sur le canal partagé.
+// En cas d'erreur, retourne : le MOP relance (le canal gRPC se reconnecte seul).
 func (w *TunnelWorker) Run(ctx context.Context) error {
-	if err := w.client.Connect(ctx); err != nil {
-		w.record("tunnel_connect_failed", err.Error())
-		return err
-	}
-	defer w.client.Close()
-	n, _ := w.store.Incr("tunnel_connects")
-	w.record("tunnel_connected", fmt.Sprintf("connect #%d", n))
+	n, _ := w.store.Incr("tunnel_sessions")
+	w.record("tunnel_session_start", fmt.Sprintf("session #%d", n))
 	return w.session(ctx)
 }
 
@@ -102,7 +104,7 @@ func (w *TunnelWorker) session(ctx context.Context) error {
 	}
 }
 
-// handleCommand traite une commande descendue (Phase 0/1 : Ping no-op).
+// handleCommand route une commande descendue vers le worker compétent (via bus).
 func (w *TunnelWorker) handleCommand(cmd *pb.Command) {
 	switch p := cmd.Payload.(type) {
 	case *pb.Command_Ping:
@@ -110,6 +112,10 @@ func (w *TunnelWorker) handleCommand(cmd *pb.Command) {
 		w.record("ping_received", cmd.CommandId)
 		w.log.Info("PING received from parent", "command_id", cmd.CommandId,
 			"note", p.Ping.Note, "total_persisted", n)
+	case *pb.Command_EgressOpen:
+		w.log.Info("egress open requested", "conn_id", p.EgressOpen.ConnId,
+			"host", p.EgressOpen.Host, "port", p.EgressOpen.Port)
+		w.bus.Publish(TopicEgress, p.EgressOpen)
 	default:
 		w.log.Warn("unknown command", "command_id", cmd.CommandId)
 	}

@@ -6,15 +6,19 @@ import (
 	"context"
 	"log/slog"
 
+	"github.com/jmlmvi/miniminihub/internal/bus"
 	"github.com/jmlmvi/miniminihub/internal/config"
 	"github.com/jmlmvi/miniminihub/internal/store"
+	"github.com/jmlmvi/miniminihub/internal/tunnel"
 )
 
 // Deps = dépendances injectées aux workers (jamais de global mutable — R03).
 type Deps struct {
-	Cfg   *config.Config
-	Log   *slog.Logger
-	Store *store.Store
+	Cfg    *config.Config
+	Log    *slog.Logger
+	Store  *store.Store
+	Bus    *bus.Bus
+	Tunnel *tunnel.Client // canal gRPC partagé (connecté dans main)
 }
 
 // Worker = unité fonctionnelle autonome (équivalent Go d'un Worker Socle V005).

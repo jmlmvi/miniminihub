@@ -19,8 +19,9 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	MiniMiniHubControl_Heartbeat_FullMethodName   = "/miniminihub.v1.MiniMiniHubControl/Heartbeat"
-	MiniMiniHubControl_PollCommand_FullMethodName = "/miniminihub.v1.MiniMiniHubControl/PollCommand"
+	MiniMiniHubControl_Heartbeat_FullMethodName    = "/miniminihub.v1.MiniMiniHubControl/Heartbeat"
+	MiniMiniHubControl_PollCommand_FullMethodName  = "/miniminihub.v1.MiniMiniHubControl/PollCommand"
+	MiniMiniHubControl_EgressStream_FullMethodName = "/miniminihub.v1.MiniMiniHubControl/EgressStream"
 )
 
 // MiniMiniHubControlClient is the client API for MiniMiniHubControl service.
@@ -31,6 +32,9 @@ type MiniMiniHubControlClient interface {
 	Heartbeat(ctx context.Context, in *HeartbeatRequest, opts ...grpc.CallOption) (*HeartbeatResponse, error)
 	// L'enfant ouvre une server-stream ; le parent pousse les commandes au fil de l'eau.
 	PollCommand(ctx context.Context, in *PollRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[Command], error)
+	// Proxy de sortie (D-17) : l'enfant ouvre ce flux bidi pour relayer une
+	// connexion d'égress. 1er frame = conn_id ; ensuite bytes dans les 2 sens.
+	EgressStream(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[EgressFrame, EgressFrame], error)
 }
 
 type miniMiniHubControlClient struct {
@@ -70,6 +74,19 @@ func (c *miniMiniHubControlClient) PollCommand(ctx context.Context, in *PollRequ
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type MiniMiniHubControl_PollCommandClient = grpc.ServerStreamingClient[Command]
 
+func (c *miniMiniHubControlClient) EgressStream(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[EgressFrame, EgressFrame], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &MiniMiniHubControl_ServiceDesc.Streams[1], MiniMiniHubControl_EgressStream_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[EgressFrame, EgressFrame]{ClientStream: stream}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type MiniMiniHubControl_EgressStreamClient = grpc.BidiStreamingClient[EgressFrame, EgressFrame]
+
 // MiniMiniHubControlServer is the server API for MiniMiniHubControl service.
 // All implementations must embed UnimplementedMiniMiniHubControlServer
 // for forward compatibility.
@@ -78,6 +95,9 @@ type MiniMiniHubControlServer interface {
 	Heartbeat(context.Context, *HeartbeatRequest) (*HeartbeatResponse, error)
 	// L'enfant ouvre une server-stream ; le parent pousse les commandes au fil de l'eau.
 	PollCommand(*PollRequest, grpc.ServerStreamingServer[Command]) error
+	// Proxy de sortie (D-17) : l'enfant ouvre ce flux bidi pour relayer une
+	// connexion d'égress. 1er frame = conn_id ; ensuite bytes dans les 2 sens.
+	EgressStream(grpc.BidiStreamingServer[EgressFrame, EgressFrame]) error
 	mustEmbedUnimplementedMiniMiniHubControlServer()
 }
 
@@ -93,6 +113,9 @@ func (UnimplementedMiniMiniHubControlServer) Heartbeat(context.Context, *Heartbe
 }
 func (UnimplementedMiniMiniHubControlServer) PollCommand(*PollRequest, grpc.ServerStreamingServer[Command]) error {
 	return status.Error(codes.Unimplemented, "method PollCommand not implemented")
+}
+func (UnimplementedMiniMiniHubControlServer) EgressStream(grpc.BidiStreamingServer[EgressFrame, EgressFrame]) error {
+	return status.Error(codes.Unimplemented, "method EgressStream not implemented")
 }
 func (UnimplementedMiniMiniHubControlServer) mustEmbedUnimplementedMiniMiniHubControlServer() {}
 func (UnimplementedMiniMiniHubControlServer) testEmbeddedByValue()                            {}
@@ -144,6 +167,13 @@ func _MiniMiniHubControl_PollCommand_Handler(srv interface{}, stream grpc.Server
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type MiniMiniHubControl_PollCommandServer = grpc.ServerStreamingServer[Command]
 
+func _MiniMiniHubControl_EgressStream_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(MiniMiniHubControlServer).EgressStream(&grpc.GenericServerStream[EgressFrame, EgressFrame]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type MiniMiniHubControl_EgressStreamServer = grpc.BidiStreamingServer[EgressFrame, EgressFrame]
+
 // MiniMiniHubControl_ServiceDesc is the grpc.ServiceDesc for MiniMiniHubControl service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -161,6 +191,12 @@ var MiniMiniHubControl_ServiceDesc = grpc.ServiceDesc{
 			StreamName:    "PollCommand",
 			Handler:       _MiniMiniHubControl_PollCommand_Handler,
 			ServerStreams: true,
+		},
+		{
+			StreamName:    "EgressStream",
+			Handler:       _MiniMiniHubControl_EgressStream_Handler,
+			ServerStreams: true,
+			ClientStreams: true,
 		},
 	},
 	Metadata: "proto/mmhpb/miniminihub.proto",

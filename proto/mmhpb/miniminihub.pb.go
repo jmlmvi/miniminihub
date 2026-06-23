@@ -216,6 +216,7 @@ type Command struct {
 	// Types that are valid to be assigned to Payload:
 	//
 	//	*Command_Ping
+	//	*Command_EgressOpen
 	Payload       isCommand_Payload `protobuf_oneof:"payload"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -281,6 +282,15 @@ func (x *Command) GetPing() *PingCommand {
 	return nil
 }
 
+func (x *Command) GetEgressOpen() *EgressOpenCommand {
+	if x != nil {
+		if x, ok := x.Payload.(*Command_EgressOpen); ok {
+			return x.EgressOpen
+		}
+	}
+	return nil
+}
+
 type isCommand_Payload interface {
 	isCommand_Payload()
 }
@@ -289,7 +299,13 @@ type Command_Ping struct {
 	Ping *PingCommand `protobuf:"bytes,10,opt,name=ping,proto3,oneof"`
 }
 
+type Command_EgressOpen struct {
+	EgressOpen *EgressOpenCommand `protobuf:"bytes,11,opt,name=egress_open,json=egressOpen,proto3,oneof"`
+}
+
 func (*Command_Ping) isCommand_Payload() {}
+
+func (*Command_EgressOpen) isCommand_Payload() {}
 
 // Phase 0 : commande no-op pour prouver le canal descendant.
 type PingCommand struct {
@@ -336,6 +352,136 @@ func (x *PingCommand) GetNote() string {
 	return ""
 }
 
+// Phase 3 : le parent demande à l'enfant d'ouvrir une sortie vers host:port.
+type EgressOpenCommand struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ConnId        string                 `protobuf:"bytes,1,opt,name=conn_id,json=connId,proto3" json:"conn_id,omitempty"` // corrèle la future EgressStream
+	Host          string                 `protobuf:"bytes,2,opt,name=host,proto3" json:"host,omitempty"`
+	Port          uint32                 `protobuf:"varint,3,opt,name=port,proto3" json:"port,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *EgressOpenCommand) Reset() {
+	*x = EgressOpenCommand{}
+	mi := &file_proto_mmhpb_miniminihub_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *EgressOpenCommand) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*EgressOpenCommand) ProtoMessage() {}
+
+func (x *EgressOpenCommand) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_mmhpb_miniminihub_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use EgressOpenCommand.ProtoReflect.Descriptor instead.
+func (*EgressOpenCommand) Descriptor() ([]byte, []int) {
+	return file_proto_mmhpb_miniminihub_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *EgressOpenCommand) GetConnId() string {
+	if x != nil {
+		return x.ConnId
+	}
+	return ""
+}
+
+func (x *EgressOpenCommand) GetHost() string {
+	if x != nil {
+		return x.Host
+	}
+	return ""
+}
+
+func (x *EgressOpenCommand) GetPort() uint32 {
+	if x != nil {
+		return x.Port
+	}
+	return 0
+}
+
+// Frame du flux d'égress (bidi). conn_id présent sur le 1er frame.
+type EgressFrame struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ConnId        string                 `protobuf:"bytes,1,opt,name=conn_id,json=connId,proto3" json:"conn_id,omitempty"`
+	Data          []byte                 `protobuf:"bytes,2,opt,name=data,proto3" json:"data,omitempty"`
+	Close         bool                   `protobuf:"varint,3,opt,name=close,proto3" json:"close,omitempty"`
+	Error         string                 `protobuf:"bytes,4,opt,name=error,proto3" json:"error,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *EgressFrame) Reset() {
+	*x = EgressFrame{}
+	mi := &file_proto_mmhpb_miniminihub_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *EgressFrame) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*EgressFrame) ProtoMessage() {}
+
+func (x *EgressFrame) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_mmhpb_miniminihub_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use EgressFrame.ProtoReflect.Descriptor instead.
+func (*EgressFrame) Descriptor() ([]byte, []int) {
+	return file_proto_mmhpb_miniminihub_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *EgressFrame) GetConnId() string {
+	if x != nil {
+		return x.ConnId
+	}
+	return ""
+}
+
+func (x *EgressFrame) GetData() []byte {
+	if x != nil {
+		return x.Data
+	}
+	return nil
+}
+
+func (x *EgressFrame) GetClose() bool {
+	if x != nil {
+		return x.Close
+	}
+	return false
+}
+
+func (x *EgressFrame) GetError() string {
+	if x != nil {
+		return x.Error
+	}
+	return ""
+}
+
 var File_proto_mmhpb_miniminihub_proto protoreflect.FileDescriptor
 
 const file_proto_mmhpb_miniminihub_proto_rawDesc = "" +
@@ -355,20 +501,32 @@ const file_proto_mmhpb_miniminihub_proto_rawDesc = "" +
 	"\btrace_id\x18\x04 \x01(\tR\atraceId\"H\n" +
 	"\vPollRequest\x12%\n" +
 	"\x0eminiminihub_id\x18\x01 \x01(\tR\rminiminihubId\x12\x12\n" +
-	"\x04slug\x18\x02 \x01(\tR\x04slug\"\x88\x01\n" +
+	"\x04slug\x18\x02 \x01(\tR\x04slug\"\xce\x01\n" +
 	"\aCommand\x12\x1d\n" +
 	"\n" +
 	"command_id\x18\x01 \x01(\tR\tcommandId\x12 \n" +
 	"\fissued_at_ms\x18\x02 \x01(\x03R\n" +
 	"issuedAtMs\x121\n" +
 	"\x04ping\x18\n" +
-	" \x01(\v2\x1b.miniminihub.v1.PingCommandH\x00R\x04pingB\t\n" +
+	" \x01(\v2\x1b.miniminihub.v1.PingCommandH\x00R\x04ping\x12D\n" +
+	"\vegress_open\x18\v \x01(\v2!.miniminihub.v1.EgressOpenCommandH\x00R\n" +
+	"egressOpenB\t\n" +
 	"\apayload\"!\n" +
 	"\vPingCommand\x12\x12\n" +
-	"\x04note\x18\x01 \x01(\tR\x04note2\xad\x01\n" +
+	"\x04note\x18\x01 \x01(\tR\x04note\"T\n" +
+	"\x11EgressOpenCommand\x12\x17\n" +
+	"\aconn_id\x18\x01 \x01(\tR\x06connId\x12\x12\n" +
+	"\x04host\x18\x02 \x01(\tR\x04host\x12\x12\n" +
+	"\x04port\x18\x03 \x01(\rR\x04port\"f\n" +
+	"\vEgressFrame\x12\x17\n" +
+	"\aconn_id\x18\x01 \x01(\tR\x06connId\x12\x12\n" +
+	"\x04data\x18\x02 \x01(\fR\x04data\x12\x14\n" +
+	"\x05close\x18\x03 \x01(\bR\x05close\x12\x14\n" +
+	"\x05error\x18\x04 \x01(\tR\x05error2\xfb\x01\n" +
 	"\x12MiniMiniHubControl\x12P\n" +
 	"\tHeartbeat\x12 .miniminihub.v1.HeartbeatRequest\x1a!.miniminihub.v1.HeartbeatResponse\x12E\n" +
-	"\vPollCommand\x12\x1b.miniminihub.v1.PollRequest\x1a\x17.miniminihub.v1.Command0\x01B1Z/github.com/jmlmvi/miniminihub/proto/mmhpb;mmhpbb\x06proto3"
+	"\vPollCommand\x12\x1b.miniminihub.v1.PollRequest\x1a\x17.miniminihub.v1.Command0\x01\x12L\n" +
+	"\fEgressStream\x12\x1b.miniminihub.v1.EgressFrame\x1a\x1b.miniminihub.v1.EgressFrame(\x010\x01B1Z/github.com/jmlmvi/miniminihub/proto/mmhpb;mmhpbb\x06proto3"
 
 var (
 	file_proto_mmhpb_miniminihub_proto_rawDescOnce sync.Once
@@ -382,25 +540,30 @@ func file_proto_mmhpb_miniminihub_proto_rawDescGZIP() []byte {
 	return file_proto_mmhpb_miniminihub_proto_rawDescData
 }
 
-var file_proto_mmhpb_miniminihub_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
+var file_proto_mmhpb_miniminihub_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
 var file_proto_mmhpb_miniminihub_proto_goTypes = []any{
 	(*HeartbeatRequest)(nil),  // 0: miniminihub.v1.HeartbeatRequest
 	(*HeartbeatResponse)(nil), // 1: miniminihub.v1.HeartbeatResponse
 	(*PollRequest)(nil),       // 2: miniminihub.v1.PollRequest
 	(*Command)(nil),           // 3: miniminihub.v1.Command
 	(*PingCommand)(nil),       // 4: miniminihub.v1.PingCommand
+	(*EgressOpenCommand)(nil), // 5: miniminihub.v1.EgressOpenCommand
+	(*EgressFrame)(nil),       // 6: miniminihub.v1.EgressFrame
 }
 var file_proto_mmhpb_miniminihub_proto_depIdxs = []int32{
 	4, // 0: miniminihub.v1.Command.ping:type_name -> miniminihub.v1.PingCommand
-	0, // 1: miniminihub.v1.MiniMiniHubControl.Heartbeat:input_type -> miniminihub.v1.HeartbeatRequest
-	2, // 2: miniminihub.v1.MiniMiniHubControl.PollCommand:input_type -> miniminihub.v1.PollRequest
-	1, // 3: miniminihub.v1.MiniMiniHubControl.Heartbeat:output_type -> miniminihub.v1.HeartbeatResponse
-	3, // 4: miniminihub.v1.MiniMiniHubControl.PollCommand:output_type -> miniminihub.v1.Command
-	3, // [3:5] is the sub-list for method output_type
-	1, // [1:3] is the sub-list for method input_type
-	1, // [1:1] is the sub-list for extension type_name
-	1, // [1:1] is the sub-list for extension extendee
-	0, // [0:1] is the sub-list for field type_name
+	5, // 1: miniminihub.v1.Command.egress_open:type_name -> miniminihub.v1.EgressOpenCommand
+	0, // 2: miniminihub.v1.MiniMiniHubControl.Heartbeat:input_type -> miniminihub.v1.HeartbeatRequest
+	2, // 3: miniminihub.v1.MiniMiniHubControl.PollCommand:input_type -> miniminihub.v1.PollRequest
+	6, // 4: miniminihub.v1.MiniMiniHubControl.EgressStream:input_type -> miniminihub.v1.EgressFrame
+	1, // 5: miniminihub.v1.MiniMiniHubControl.Heartbeat:output_type -> miniminihub.v1.HeartbeatResponse
+	3, // 6: miniminihub.v1.MiniMiniHubControl.PollCommand:output_type -> miniminihub.v1.Command
+	6, // 7: miniminihub.v1.MiniMiniHubControl.EgressStream:output_type -> miniminihub.v1.EgressFrame
+	5, // [5:8] is the sub-list for method output_type
+	2, // [2:5] is the sub-list for method input_type
+	2, // [2:2] is the sub-list for extension type_name
+	2, // [2:2] is the sub-list for extension extendee
+	0, // [0:2] is the sub-list for field type_name
 }
 
 func init() { file_proto_mmhpb_miniminihub_proto_init() }
@@ -410,6 +573,7 @@ func file_proto_mmhpb_miniminihub_proto_init() {
 	}
 	file_proto_mmhpb_miniminihub_proto_msgTypes[3].OneofWrappers = []any{
 		(*Command_Ping)(nil),
+		(*Command_EgressOpen)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -417,7 +581,7 @@ func file_proto_mmhpb_miniminihub_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_mmhpb_miniminihub_proto_rawDesc), len(file_proto_mmhpb_miniminihub_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   5,
+			NumMessages:   7,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

@@ -107,6 +107,15 @@ func (c *Client) Heartbeat(ctx context.Context, seq uint64) (*pb.HeartbeatRespon
 	return resp, nil
 }
 
+// EgressStream ouvre le flux bidi d'égress vers le parent (proxy de sortie, D-17).
+func (c *Client) EgressStream(ctx context.Context) (pb.MiniMiniHubControl_EgressStreamClient, error) {
+	stream, err := c.ctrl.EgressStream(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("open egress stream: %w", err)
+	}
+	return stream, nil
+}
+
 // Poll ouvre la server-stream PollCommand et invoque onCommand pour chaque
 // commande poussée par le parent. Bloque jusqu'à fin de stream / erreur / ctx.
 func (c *Client) Poll(ctx context.Context, onCommand func(*pb.Command)) error {

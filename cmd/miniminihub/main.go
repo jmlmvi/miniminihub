@@ -10,9 +10,11 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/jmlmvi/miniminihub/internal/bus"
 	"github.com/jmlmvi/miniminihub/internal/config"
 	"github.com/jmlmvi/miniminihub/internal/mop"
 	"github.com/jmlmvi/miniminihub/internal/store"
+	"github.com/jmlmvi/miniminihub/internal/tunnel"
 	"github.com/jmlmvi/miniminihub/internal/worker"
 )
 
@@ -52,10 +54,21 @@ func run() error {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
-	deps := mop.Deps{Cfg: cfg, Log: log, Store: st}
+	// Canal gRPC sortant partagé (connexion paresseuse ; les RPC pilotent le dial).
+	tun := tunnel.New(cfg.ParentEndpoint, cfg.MiniminihubID, cfg.Slug, cfg.TLS, log)
+	if err := tun.Connect(ctx); err != nil {
+		return fmt.Errorf("connect tunnel: %w", err)
+	}
+	defer tun.Close()
 
-	// Noyau : TunnelWorker (100) + StateWorker (200). Rôles proxy/smtp/jobs à venir.
-	sup := mop.New(deps, worker.NewTunnel(), worker.NewState())
+	deps := mop.Deps{Cfg: cfg, Log: log, Store: st, Bus: bus.New(), Tunnel: tun}
 
-	return sup.Run(ctx)
+	// Noyau : TunnelWorker (100) + StateWorker (200). Rôles activés par bootstrap.roles[].
+	workers := []mop.Worker{worker.NewTunnel(), worker.NewState()}
+	if cfg.HasRole("proxy") {
+		workers = append(workers, worker.NewProxy())
+	}
+	log.Info("workers registered", "count", len(workers), "roles", cfg.Roles)
+
+	return mop.New(deps, workers...).Run(ctx)
 }
