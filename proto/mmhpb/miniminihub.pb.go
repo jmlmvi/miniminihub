@@ -358,6 +358,7 @@ type EgressOpenCommand struct {
 	ConnId        string                 `protobuf:"bytes,1,opt,name=conn_id,json=connId,proto3" json:"conn_id,omitempty"` // corrèle la future EgressStream
 	Host          string                 `protobuf:"bytes,2,opt,name=host,proto3" json:"host,omitempty"`
 	Port          uint32                 `protobuf:"varint,3,opt,name=port,proto3" json:"port,omitempty"`
+	ViaTor        bool                   `protobuf:"varint,5,opt,name=via_tor,json=viaTor,proto3" json:"via_tor,omitempty"` // V002 P2 : sortir via TOR (SOCKS5 local) au lieu du direct
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -411,6 +412,13 @@ func (x *EgressOpenCommand) GetPort() uint32 {
 		return x.Port
 	}
 	return 0
+}
+
+func (x *EgressOpenCommand) GetViaTor() bool {
+	if x != nil {
+		return x.ViaTor
+	}
+	return false
 }
 
 // Frame du flux d'égress (bidi). conn_id présent sur le 1er frame.
@@ -513,11 +521,12 @@ const file_proto_mmhpb_miniminihub_proto_rawDesc = "" +
 	"egressOpenB\t\n" +
 	"\apayload\"!\n" +
 	"\vPingCommand\x12\x12\n" +
-	"\x04note\x18\x01 \x01(\tR\x04note\"T\n" +
+	"\x04note\x18\x01 \x01(\tR\x04note\"m\n" +
 	"\x11EgressOpenCommand\x12\x17\n" +
 	"\aconn_id\x18\x01 \x01(\tR\x06connId\x12\x12\n" +
 	"\x04host\x18\x02 \x01(\tR\x04host\x12\x12\n" +
-	"\x04port\x18\x03 \x01(\rR\x04port\"f\n" +
+	"\x04port\x18\x03 \x01(\rR\x04port\x12\x17\n" +
+	"\avia_tor\x18\x05 \x01(\bR\x06viaTor\"f\n" +
 	"\vEgressFrame\x12\x17\n" +
 	"\aconn_id\x18\x01 \x01(\tR\x06connId\x12\x12\n" +
 	"\x04data\x18\x02 \x01(\fR\x04data\x12\x14\n" +

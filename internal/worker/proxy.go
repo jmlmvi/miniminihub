@@ -7,11 +7,16 @@ import (
 	"strconv"
 	"time"
 
+	"golang.org/x/net/proxy"
+
 	"github.com/jmlmvi/miniminihub/internal/mop"
 	"github.com/jmlmvi/miniminihub/internal/store"
 	"github.com/jmlmvi/miniminihub/internal/tunnel"
 	pb "github.com/jmlmvi/miniminihub/proto/mmhpb"
 )
+
+// torSocksAddr = SOCKS5 du daemon tor local sur la VM (V002 P2, option A).
+const torSocksAddr = "127.0.0.1:9050"
 
 // ProxyWorker = rôle exit node (D-17). Reçoit les ordres d'égress (host:port)
 // via le bus, ouvre la connexion sortante depuis l'IP de la VM, et relaie les
@@ -70,16 +75,29 @@ func (w *ProxyWorker) handle(ctx context.Context, cmd *pb.EgressOpenCommand) {
 		return
 	}
 
-	conn, err := net.DialTimeout("tcp", target, 15*time.Second)
+	var conn net.Conn
+	if cmd.ViaTor {
+		// Option A : sortir via le SOCKS5 du daemon tor local (dialer 100% Go natif).
+		d, derr := proxy.SOCKS5("tcp", torSocksAddr, nil, &net.Dialer{Timeout: 25 * time.Second})
+		if derr != nil {
+			log.Error("tor SOCKS5 dialer", "err", derr)
+			_ = stream.Send(&pb.EgressFrame{Close: true, Error: "tor dialer: " + derr.Error()})
+			_ = stream.CloseSend()
+			return
+		}
+		conn, err = d.Dial("tcp", target)
+	} else {
+		conn, err = net.DialTimeout("tcp", target, 15*time.Second)
+	}
 	if err != nil {
-		log.Warn("dial target failed", "err", err)
+		log.Warn("dial target failed", "via_tor", cmd.ViaTor, "err", err)
 		_ = stream.Send(&pb.EgressFrame{Close: true, Error: err.Error()})
 		_ = stream.CloseSend()
 		return
 	}
 	defer conn.Close()
 	n, _ := w.store.Incr("egress_connections")
-	log.Info("egress established", "total_egress", n)
+	log.Info("egress established", "via_tor", cmd.ViaTor, "total_egress", n)
 
 	// target -> stream (seul émetteur après l'annonce).
 	go func() {
