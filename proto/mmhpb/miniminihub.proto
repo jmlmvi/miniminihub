@@ -45,14 +45,21 @@ message Command {
   string command_id  = 1;
   int64  issued_at_ms = 2;
   oneof payload {
-    PingCommand       ping        = 10;
-    EgressOpenCommand egress_open = 11;
+    PingCommand         ping          = 10;
+    EgressOpenCommand   egress_open   = 11;
+    RotateEgressCommand rotate_egress = 12; // V002 P2 : NEWNYM — rotation de l'IP de sortie TOR
   }
 }
 
 // Phase 0 : commande no-op pour prouver le canal descendant.
 message PingCommand {
   string note = 1;
+}
+
+// V002 P2 : le parent demande à l'enfant de renouveler ses circuits TOR
+// (SIGNAL NEWNYM sur le ControlPort local 9051) → nouvelle IP de sortie TOR.
+message RotateEgressCommand {
+  string request_id = 1; // corrélation / trace
 }
 
 // Phase 3 : le parent demande à l'enfant d'ouvrir une sortie vers host:port.

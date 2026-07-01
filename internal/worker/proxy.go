@@ -22,10 +22,11 @@ const torSocksAddr = "127.0.0.1:9050"
 // via le bus, ouvre la connexion sortante depuis l'IP de la VM, et relaie les
 // bytes dans un flux gRPC bidi (EgressStream). Priorité 300, actif si role "proxy".
 type ProxyWorker struct {
-	log    *slog.Logger
-	store  *store.Store
-	tunnel *tunnel.Client
-	sub    <-chan any
+	log       *slog.Logger
+	store     *store.Store
+	tunnel    *tunnel.Client
+	sub       <-chan any
+	rotateSub <-chan any
 }
 
 // NewProxy construit le worker proxy.
@@ -38,7 +39,8 @@ func (w *ProxyWorker) Init(_ context.Context, d mop.Deps) error {
 	w.log = d.Log.With("worker", "proxy")
 	w.store = d.Store
 	w.tunnel = d.Tunnel
-	w.sub = d.Bus.Subscribe(TopicEgress) // abonnement dans Init (règle Socle)
+	w.sub = d.Bus.Subscribe(TopicEgress)       // abonnement dans Init (règle Socle)
+	w.rotateSub = d.Bus.Subscribe(TopicRotate) // NEWNYM (V002 P2)
 	return nil
 }
 
@@ -55,8 +57,27 @@ func (w *ProxyWorker) Run(ctx context.Context) error {
 				continue
 			}
 			go w.handle(ctx, cmd)
+		case msg := <-w.rotateSub:
+			cmd, ok := msg.(*pb.RotateEgressCommand)
+			if !ok {
+				continue
+			}
+			go w.rotate(cmd)
 		}
 	}
+}
+
+// rotate exécute un SIGNAL NEWNYM sur le daemon tor local → nouvelle IP de
+// sortie TOR. Idempotent, fire-and-forget (la preuve du changement d'IP se
+// fait côté HUB via un test via_tor consécutif).
+func (w *ProxyWorker) rotate(cmd *pb.RotateEgressCommand) {
+	log := w.log.With("request_id", cmd.RequestId)
+	if err := rotateTor(); err != nil {
+		log.Error("tor NEWNYM failed", "err", err)
+		return
+	}
+	n, _ := w.store.Incr("egress_rotations")
+	log.Info("tor NEWNYM ok (nouveaux circuits)", "total_rotations", n)
 }
 
 // handle ouvre la sortie vers host:port et relaie le trafic via EgressStream.

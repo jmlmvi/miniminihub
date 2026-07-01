@@ -217,6 +217,7 @@ type Command struct {
 	//
 	//	*Command_Ping
 	//	*Command_EgressOpen
+	//	*Command_RotateEgress
 	Payload       isCommand_Payload `protobuf_oneof:"payload"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -291,6 +292,15 @@ func (x *Command) GetEgressOpen() *EgressOpenCommand {
 	return nil
 }
 
+func (x *Command) GetRotateEgress() *RotateEgressCommand {
+	if x != nil {
+		if x, ok := x.Payload.(*Command_RotateEgress); ok {
+			return x.RotateEgress
+		}
+	}
+	return nil
+}
+
 type isCommand_Payload interface {
 	isCommand_Payload()
 }
@@ -303,9 +313,15 @@ type Command_EgressOpen struct {
 	EgressOpen *EgressOpenCommand `protobuf:"bytes,11,opt,name=egress_open,json=egressOpen,proto3,oneof"`
 }
 
+type Command_RotateEgress struct {
+	RotateEgress *RotateEgressCommand `protobuf:"bytes,12,opt,name=rotate_egress,json=rotateEgress,proto3,oneof"` // V002 P2 : NEWNYM — rotation de l'IP de sortie TOR
+}
+
 func (*Command_Ping) isCommand_Payload() {}
 
 func (*Command_EgressOpen) isCommand_Payload() {}
+
+func (*Command_RotateEgress) isCommand_Payload() {}
 
 // Phase 0 : commande no-op pour prouver le canal descendant.
 type PingCommand struct {
@@ -352,6 +368,52 @@ func (x *PingCommand) GetNote() string {
 	return ""
 }
 
+// V002 P2 : le parent demande à l'enfant de renouveler ses circuits TOR
+// (SIGNAL NEWNYM sur le ControlPort local 9051) → nouvelle IP de sortie TOR.
+type RotateEgressCommand struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	RequestId     string                 `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"` // corrélation / trace
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RotateEgressCommand) Reset() {
+	*x = RotateEgressCommand{}
+	mi := &file_proto_mmhpb_miniminihub_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RotateEgressCommand) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RotateEgressCommand) ProtoMessage() {}
+
+func (x *RotateEgressCommand) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_mmhpb_miniminihub_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RotateEgressCommand.ProtoReflect.Descriptor instead.
+func (*RotateEgressCommand) Descriptor() ([]byte, []int) {
+	return file_proto_mmhpb_miniminihub_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *RotateEgressCommand) GetRequestId() string {
+	if x != nil {
+		return x.RequestId
+	}
+	return ""
+}
+
 // Phase 3 : le parent demande à l'enfant d'ouvrir une sortie vers host:port.
 type EgressOpenCommand struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -365,7 +427,7 @@ type EgressOpenCommand struct {
 
 func (x *EgressOpenCommand) Reset() {
 	*x = EgressOpenCommand{}
-	mi := &file_proto_mmhpb_miniminihub_proto_msgTypes[5]
+	mi := &file_proto_mmhpb_miniminihub_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -377,7 +439,7 @@ func (x *EgressOpenCommand) String() string {
 func (*EgressOpenCommand) ProtoMessage() {}
 
 func (x *EgressOpenCommand) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_mmhpb_miniminihub_proto_msgTypes[5]
+	mi := &file_proto_mmhpb_miniminihub_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -390,7 +452,7 @@ func (x *EgressOpenCommand) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EgressOpenCommand.ProtoReflect.Descriptor instead.
 func (*EgressOpenCommand) Descriptor() ([]byte, []int) {
-	return file_proto_mmhpb_miniminihub_proto_rawDescGZIP(), []int{5}
+	return file_proto_mmhpb_miniminihub_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *EgressOpenCommand) GetConnId() string {
@@ -434,7 +496,7 @@ type EgressFrame struct {
 
 func (x *EgressFrame) Reset() {
 	*x = EgressFrame{}
-	mi := &file_proto_mmhpb_miniminihub_proto_msgTypes[6]
+	mi := &file_proto_mmhpb_miniminihub_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -446,7 +508,7 @@ func (x *EgressFrame) String() string {
 func (*EgressFrame) ProtoMessage() {}
 
 func (x *EgressFrame) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_mmhpb_miniminihub_proto_msgTypes[6]
+	mi := &file_proto_mmhpb_miniminihub_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -459,7 +521,7 @@ func (x *EgressFrame) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EgressFrame.ProtoReflect.Descriptor instead.
 func (*EgressFrame) Descriptor() ([]byte, []int) {
-	return file_proto_mmhpb_miniminihub_proto_rawDescGZIP(), []int{6}
+	return file_proto_mmhpb_miniminihub_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *EgressFrame) GetConnId() string {
@@ -509,7 +571,7 @@ const file_proto_mmhpb_miniminihub_proto_rawDesc = "" +
 	"\btrace_id\x18\x04 \x01(\tR\atraceId\"H\n" +
 	"\vPollRequest\x12%\n" +
 	"\x0eminiminihub_id\x18\x01 \x01(\tR\rminiminihubId\x12\x12\n" +
-	"\x04slug\x18\x02 \x01(\tR\x04slug\"\xce\x01\n" +
+	"\x04slug\x18\x02 \x01(\tR\x04slug\"\x9a\x02\n" +
 	"\aCommand\x12\x1d\n" +
 	"\n" +
 	"command_id\x18\x01 \x01(\tR\tcommandId\x12 \n" +
@@ -518,10 +580,14 @@ const file_proto_mmhpb_miniminihub_proto_rawDesc = "" +
 	"\x04ping\x18\n" +
 	" \x01(\v2\x1b.miniminihub.v1.PingCommandH\x00R\x04ping\x12D\n" +
 	"\vegress_open\x18\v \x01(\v2!.miniminihub.v1.EgressOpenCommandH\x00R\n" +
-	"egressOpenB\t\n" +
+	"egressOpen\x12J\n" +
+	"\rrotate_egress\x18\f \x01(\v2#.miniminihub.v1.RotateEgressCommandH\x00R\frotateEgressB\t\n" +
 	"\apayload\"!\n" +
 	"\vPingCommand\x12\x12\n" +
-	"\x04note\x18\x01 \x01(\tR\x04note\"m\n" +
+	"\x04note\x18\x01 \x01(\tR\x04note\"4\n" +
+	"\x13RotateEgressCommand\x12\x1d\n" +
+	"\n" +
+	"request_id\x18\x01 \x01(\tR\trequestId\"m\n" +
 	"\x11EgressOpenCommand\x12\x17\n" +
 	"\aconn_id\x18\x01 \x01(\tR\x06connId\x12\x12\n" +
 	"\x04host\x18\x02 \x01(\tR\x04host\x12\x12\n" +
@@ -549,30 +615,32 @@ func file_proto_mmhpb_miniminihub_proto_rawDescGZIP() []byte {
 	return file_proto_mmhpb_miniminihub_proto_rawDescData
 }
 
-var file_proto_mmhpb_miniminihub_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
+var file_proto_mmhpb_miniminihub_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
 var file_proto_mmhpb_miniminihub_proto_goTypes = []any{
-	(*HeartbeatRequest)(nil),  // 0: miniminihub.v1.HeartbeatRequest
-	(*HeartbeatResponse)(nil), // 1: miniminihub.v1.HeartbeatResponse
-	(*PollRequest)(nil),       // 2: miniminihub.v1.PollRequest
-	(*Command)(nil),           // 3: miniminihub.v1.Command
-	(*PingCommand)(nil),       // 4: miniminihub.v1.PingCommand
-	(*EgressOpenCommand)(nil), // 5: miniminihub.v1.EgressOpenCommand
-	(*EgressFrame)(nil),       // 6: miniminihub.v1.EgressFrame
+	(*HeartbeatRequest)(nil),    // 0: miniminihub.v1.HeartbeatRequest
+	(*HeartbeatResponse)(nil),   // 1: miniminihub.v1.HeartbeatResponse
+	(*PollRequest)(nil),         // 2: miniminihub.v1.PollRequest
+	(*Command)(nil),             // 3: miniminihub.v1.Command
+	(*PingCommand)(nil),         // 4: miniminihub.v1.PingCommand
+	(*RotateEgressCommand)(nil), // 5: miniminihub.v1.RotateEgressCommand
+	(*EgressOpenCommand)(nil),   // 6: miniminihub.v1.EgressOpenCommand
+	(*EgressFrame)(nil),         // 7: miniminihub.v1.EgressFrame
 }
 var file_proto_mmhpb_miniminihub_proto_depIdxs = []int32{
 	4, // 0: miniminihub.v1.Command.ping:type_name -> miniminihub.v1.PingCommand
-	5, // 1: miniminihub.v1.Command.egress_open:type_name -> miniminihub.v1.EgressOpenCommand
-	0, // 2: miniminihub.v1.MiniMiniHubControl.Heartbeat:input_type -> miniminihub.v1.HeartbeatRequest
-	2, // 3: miniminihub.v1.MiniMiniHubControl.PollCommand:input_type -> miniminihub.v1.PollRequest
-	6, // 4: miniminihub.v1.MiniMiniHubControl.EgressStream:input_type -> miniminihub.v1.EgressFrame
-	1, // 5: miniminihub.v1.MiniMiniHubControl.Heartbeat:output_type -> miniminihub.v1.HeartbeatResponse
-	3, // 6: miniminihub.v1.MiniMiniHubControl.PollCommand:output_type -> miniminihub.v1.Command
-	6, // 7: miniminihub.v1.MiniMiniHubControl.EgressStream:output_type -> miniminihub.v1.EgressFrame
-	5, // [5:8] is the sub-list for method output_type
-	2, // [2:5] is the sub-list for method input_type
-	2, // [2:2] is the sub-list for extension type_name
-	2, // [2:2] is the sub-list for extension extendee
-	0, // [0:2] is the sub-list for field type_name
+	6, // 1: miniminihub.v1.Command.egress_open:type_name -> miniminihub.v1.EgressOpenCommand
+	5, // 2: miniminihub.v1.Command.rotate_egress:type_name -> miniminihub.v1.RotateEgressCommand
+	0, // 3: miniminihub.v1.MiniMiniHubControl.Heartbeat:input_type -> miniminihub.v1.HeartbeatRequest
+	2, // 4: miniminihub.v1.MiniMiniHubControl.PollCommand:input_type -> miniminihub.v1.PollRequest
+	7, // 5: miniminihub.v1.MiniMiniHubControl.EgressStream:input_type -> miniminihub.v1.EgressFrame
+	1, // 6: miniminihub.v1.MiniMiniHubControl.Heartbeat:output_type -> miniminihub.v1.HeartbeatResponse
+	3, // 7: miniminihub.v1.MiniMiniHubControl.PollCommand:output_type -> miniminihub.v1.Command
+	7, // 8: miniminihub.v1.MiniMiniHubControl.EgressStream:output_type -> miniminihub.v1.EgressFrame
+	6, // [6:9] is the sub-list for method output_type
+	3, // [3:6] is the sub-list for method input_type
+	3, // [3:3] is the sub-list for extension type_name
+	3, // [3:3] is the sub-list for extension extendee
+	0, // [0:3] is the sub-list for field type_name
 }
 
 func init() { file_proto_mmhpb_miniminihub_proto_init() }
@@ -583,6 +651,7 @@ func file_proto_mmhpb_miniminihub_proto_init() {
 	file_proto_mmhpb_miniminihub_proto_msgTypes[3].OneofWrappers = []any{
 		(*Command_Ping)(nil),
 		(*Command_EgressOpen)(nil),
+		(*Command_RotateEgress)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -590,7 +659,7 @@ func file_proto_mmhpb_miniminihub_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_mmhpb_miniminihub_proto_rawDesc), len(file_proto_mmhpb_miniminihub_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   7,
+			NumMessages:   8,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

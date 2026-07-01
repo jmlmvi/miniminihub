@@ -17,6 +17,9 @@ import (
 // TopicEgress = topic bus des demandes d'ouverture de sortie (proxy).
 const TopicEgress = "egress"
 
+// TopicRotate = topic bus des demandes de rotation TOR (NEWNYM, V002 P2).
+const TopicRotate = "egress_rotate"
+
 // TunnelWorker maintient le canal sortant partagé : heartbeat + pollcommand.
 // Le canal gRPC lui-même est connecté dans main et partagé via Deps.Tunnel.
 // Toujours actif (priorité 100).
@@ -60,7 +63,8 @@ func (w *TunnelWorker) session(ctx context.Context) error {
 	errCh := make(chan error, 2)
 
 	go func() {
-		ticker := time.NewTicker(time.Duration(w.hbMs) * time.Millisecond)
+		curMs := w.hbMs
+		ticker := time.NewTicker(time.Duration(curMs) * time.Millisecond)
 		defer ticker.Stop()
 		var seq uint64
 
@@ -73,6 +77,13 @@ func (w *TunnelWorker) session(ctx context.Context) error {
 			total, _ := w.store.Incr("heartbeats")
 			w.log.Info("heartbeat ack", "seq", seq, "accepted", resp.Accepted,
 				"next_interval_ms", resp.NextIntervalMs, "trace_id", resp.TraceId, "total_persisted", total)
+			// Le mh dicte la cadence via next_interval_ms (présence rapide, CDC-1 :
+			// évite le flapping HEALTHY/DEAD quand le bootstrap fixe un intervalle plus lent).
+			if n := int(resp.NextIntervalMs); n > 0 && n != curMs {
+				w.log.Info("adopte la cadence heartbeat du parent", "old_ms", curMs, "new_ms", n)
+				curMs = n
+				ticker.Reset(time.Duration(curMs) * time.Millisecond)
+			}
 			return nil
 		}
 		if err := send(); err != nil {
@@ -116,6 +127,9 @@ func (w *TunnelWorker) handleCommand(cmd *pb.Command) {
 		w.log.Info("egress open requested", "conn_id", p.EgressOpen.ConnId,
 			"host", p.EgressOpen.Host, "port", p.EgressOpen.Port)
 		w.bus.Publish(TopicEgress, p.EgressOpen)
+	case *pb.Command_RotateEgress:
+		w.log.Info("egress rotate (NEWNYM) requested", "request_id", p.RotateEgress.RequestId)
+		w.bus.Publish(TopicRotate, p.RotateEgress)
 	default:
 		w.log.Warn("unknown command", "command_id", cmd.CommandId)
 	}
