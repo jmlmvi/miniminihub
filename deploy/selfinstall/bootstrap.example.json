@@ -1,0 +1,16 @@
+{
+  "miniminihub_id": "<UUID minté par le Hub>",
+  "slug": "mmh-<nom-vm>",
+  "parent_minihub_endpoint": "51.254.131.9:7443",
+  "mode": "ephemeral",
+  "roles": ["proxy", "smtp", "batch"],
+  "heartbeat_ms": 5000,
+  "store_path": "/opt/miniminihub/store.db",
+  "tls": {
+    "enabled": true,
+    "ca_path": "/opt/miniminihub/ca.crt",
+    "cert_path": "/opt/miniminihub/client.crt",
+    "key_path": "/opt/miniminihub/client.key",
+    "server_name": "51.254.131.9"
+  }
+}

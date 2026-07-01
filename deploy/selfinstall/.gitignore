@@ -1,0 +1,7 @@
+# Identité réelle d'un mmh — ne JAMAIS committer (générée par VM depuis le Hub)
+bootstrap.json
+ca.crt
+client.crt
+client.key
+agent
+*.tgz
