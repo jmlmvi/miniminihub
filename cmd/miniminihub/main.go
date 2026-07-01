@@ -71,6 +71,9 @@ func run() error {
 	if cfg.HasRole("smtp") {
 		workers = append(workers, worker.NewSmtp())
 	}
+	if cfg.HasRole("batch") {
+		workers = append(workers, worker.NewBatch())
+	}
 	log.Info("workers registered", "count", len(workers), "roles", cfg.Roles)
 
 	return mop.New(deps, workers...).Run(ctx)

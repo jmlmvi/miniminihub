@@ -252,6 +252,7 @@ type Command struct {
 	//	*Command_EgressOpen
 	//	*Command_RotateEgress
 	//	*Command_SmtpSend
+	//	*Command_ConfigureBatch
 	Payload       isCommand_Payload `protobuf_oneof:"payload"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -344,6 +345,15 @@ func (x *Command) GetSmtpSend() *SmtpSendCommand {
 	return nil
 }
 
+func (x *Command) GetConfigureBatch() *ConfigureBatchCommand {
+	if x != nil {
+		if x, ok := x.Payload.(*Command_ConfigureBatch); ok {
+			return x.ConfigureBatch
+		}
+	}
+	return nil
+}
+
 type isCommand_Payload interface {
 	isCommand_Payload()
 }
@@ -364,6 +374,10 @@ type Command_SmtpSend struct {
 	SmtpSend *SmtpSendCommand `protobuf:"bytes,13,opt,name=smtp_send,json=smtpSend,proto3,oneof"` // V002 P3 : remise MX directe d'un message
 }
 
+type Command_ConfigureBatch struct {
+	ConfigureBatch *ConfigureBatchCommand `protobuf:"bytes,14,opt,name=configure_batch,json=configureBatch,proto3,oneof"` // V002 P5 : (re)configure les jobs batch
+}
+
 func (*Command_Ping) isCommand_Payload() {}
 
 func (*Command_EgressOpen) isCommand_Payload() {}
@@ -371,6 +385,361 @@ func (*Command_EgressOpen) isCommand_Payload() {}
 func (*Command_RotateEgress) isCommand_Payload() {}
 
 func (*Command_SmtpSend) isCommand_Payload() {}
+
+func (*Command_ConfigureBatch) isCommand_Payload() {}
+
+// V002 P5 — Agent Batch (voir grpc-contracts pour la doc complète).
+type ReportHub struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	HubKey        string                 `protobuf:"bytes,1,opt,name=hub_key,json=hubKey,proto3" json:"hub_key,omitempty"`
+	Recipients    []string               `protobuf:"bytes,2,rep,name=recipients,proto3" json:"recipients,omitempty"` // vide = pas de mail
+	SubjectTpl    string                 `protobuf:"bytes,3,opt,name=subject_tpl,json=subjectTpl,proto3" json:"subject_tpl,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ReportHub) Reset() {
+	*x = ReportHub{}
+	mi := &file_proto_mmhpb_miniminihub_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ReportHub) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ReportHub) ProtoMessage() {}
+
+func (x *ReportHub) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_mmhpb_miniminihub_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ReportHub.ProtoReflect.Descriptor instead.
+func (*ReportHub) Descriptor() ([]byte, []int) {
+	return file_proto_mmhpb_miniminihub_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *ReportHub) GetHubKey() string {
+	if x != nil {
+		return x.HubKey
+	}
+	return ""
+}
+
+func (x *ReportHub) GetRecipients() []string {
+	if x != nil {
+		return x.Recipients
+	}
+	return nil
+}
+
+func (x *ReportHub) GetSubjectTpl() string {
+	if x != nil {
+		return x.SubjectTpl
+	}
+	return ""
+}
+
+type JobSpec struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	Id             string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Enabled        bool                   `protobuf:"varint,2,opt,name=enabled,proto3" json:"enabled,omitempty"`
+	Schedule       string                 `protobuf:"bytes,3,opt,name=schedule,proto3" json:"schedule,omitempty"`
+	Timezone       string                 `protobuf:"bytes,4,opt,name=timezone,proto3" json:"timezone,omitempty"`
+	AgentKind      string                 `protobuf:"bytes,5,opt,name=agent_kind,json=agentKind,proto3" json:"agent_kind,omitempty"`
+	AgentParams    map[string]string      `protobuf:"bytes,6,rep,name=agent_params,json=agentParams,proto3" json:"agent_params,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	PromptTemplate string                 `protobuf:"bytes,7,opt,name=prompt_template,json=promptTemplate,proto3" json:"prompt_template,omitempty"`
+	PromptVars     map[string]string      `protobuf:"bytes,8,rep,name=prompt_vars,json=promptVars,proto3" json:"prompt_vars,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	TimeoutMs      int64                  `protobuf:"varint,9,opt,name=timeout_ms,json=timeoutMs,proto3" json:"timeout_ms,omitempty"`
+	Overlap        string                 `protobuf:"bytes,10,opt,name=overlap,proto3" json:"overlap,omitempty"`
+	MaxAttempts    int32                  `protobuf:"varint,11,opt,name=max_attempts,json=maxAttempts,proto3" json:"max_attempts,omitempty"`
+	BackoffMs      int64                  `protobuf:"varint,12,opt,name=backoff_ms,json=backoffMs,proto3" json:"backoff_ms,omitempty"`
+	ReportHubs     []*ReportHub           `protobuf:"bytes,13,rep,name=report_hubs,json=reportHubs,proto3" json:"report_hubs,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *JobSpec) Reset() {
+	*x = JobSpec{}
+	mi := &file_proto_mmhpb_miniminihub_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *JobSpec) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*JobSpec) ProtoMessage() {}
+
+func (x *JobSpec) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_mmhpb_miniminihub_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use JobSpec.ProtoReflect.Descriptor instead.
+func (*JobSpec) Descriptor() ([]byte, []int) {
+	return file_proto_mmhpb_miniminihub_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *JobSpec) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *JobSpec) GetEnabled() bool {
+	if x != nil {
+		return x.Enabled
+	}
+	return false
+}
+
+func (x *JobSpec) GetSchedule() string {
+	if x != nil {
+		return x.Schedule
+	}
+	return ""
+}
+
+func (x *JobSpec) GetTimezone() string {
+	if x != nil {
+		return x.Timezone
+	}
+	return ""
+}
+
+func (x *JobSpec) GetAgentKind() string {
+	if x != nil {
+		return x.AgentKind
+	}
+	return ""
+}
+
+func (x *JobSpec) GetAgentParams() map[string]string {
+	if x != nil {
+		return x.AgentParams
+	}
+	return nil
+}
+
+func (x *JobSpec) GetPromptTemplate() string {
+	if x != nil {
+		return x.PromptTemplate
+	}
+	return ""
+}
+
+func (x *JobSpec) GetPromptVars() map[string]string {
+	if x != nil {
+		return x.PromptVars
+	}
+	return nil
+}
+
+func (x *JobSpec) GetTimeoutMs() int64 {
+	if x != nil {
+		return x.TimeoutMs
+	}
+	return 0
+}
+
+func (x *JobSpec) GetOverlap() string {
+	if x != nil {
+		return x.Overlap
+	}
+	return ""
+}
+
+func (x *JobSpec) GetMaxAttempts() int32 {
+	if x != nil {
+		return x.MaxAttempts
+	}
+	return 0
+}
+
+func (x *JobSpec) GetBackoffMs() int64 {
+	if x != nil {
+		return x.BackoffMs
+	}
+	return 0
+}
+
+func (x *JobSpec) GetReportHubs() []*ReportHub {
+	if x != nil {
+		return x.ReportHubs
+	}
+	return nil
+}
+
+type ConfigureBatchCommand struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Jobs          []*JobSpec             `protobuf:"bytes,1,rep,name=jobs,proto3" json:"jobs,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ConfigureBatchCommand) Reset() {
+	*x = ConfigureBatchCommand{}
+	mi := &file_proto_mmhpb_miniminihub_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ConfigureBatchCommand) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ConfigureBatchCommand) ProtoMessage() {}
+
+func (x *ConfigureBatchCommand) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_mmhpb_miniminihub_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ConfigureBatchCommand.ProtoReflect.Descriptor instead.
+func (*ConfigureBatchCommand) Descriptor() ([]byte, []int) {
+	return file_proto_mmhpb_miniminihub_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *ConfigureBatchCommand) GetJobs() []*JobSpec {
+	if x != nil {
+		return x.Jobs
+	}
+	return nil
+}
+
+type BatchReport struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	JobId         string                 `protobuf:"bytes,1,opt,name=job_id,json=jobId,proto3" json:"job_id,omitempty"`
+	RunId         string                 `protobuf:"bytes,2,opt,name=run_id,json=runId,proto3" json:"run_id,omitempty"`
+	Status        string                 `protobuf:"bytes,3,opt,name=status,proto3" json:"status,omitempty"`
+	ReportMd      []byte                 `protobuf:"bytes,4,opt,name=report_md,json=reportMd,proto3" json:"report_md,omitempty"`
+	Metrics       map[string]string      `protobuf:"bytes,5,rep,name=metrics,proto3" json:"metrics,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	StartedAtMs   int64                  `protobuf:"varint,6,opt,name=started_at_ms,json=startedAtMs,proto3" json:"started_at_ms,omitempty"`
+	EndedAtMs     int64                  `protobuf:"varint,7,opt,name=ended_at_ms,json=endedAtMs,proto3" json:"ended_at_ms,omitempty"`
+	Error         string                 `protobuf:"bytes,8,opt,name=error,proto3" json:"error,omitempty"`
+	ReportHubs    []*ReportHub           `protobuf:"bytes,9,rep,name=report_hubs,json=reportHubs,proto3" json:"report_hubs,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BatchReport) Reset() {
+	*x = BatchReport{}
+	mi := &file_proto_mmhpb_miniminihub_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BatchReport) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BatchReport) ProtoMessage() {}
+
+func (x *BatchReport) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_mmhpb_miniminihub_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BatchReport.ProtoReflect.Descriptor instead.
+func (*BatchReport) Descriptor() ([]byte, []int) {
+	return file_proto_mmhpb_miniminihub_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *BatchReport) GetJobId() string {
+	if x != nil {
+		return x.JobId
+	}
+	return ""
+}
+
+func (x *BatchReport) GetRunId() string {
+	if x != nil {
+		return x.RunId
+	}
+	return ""
+}
+
+func (x *BatchReport) GetStatus() string {
+	if x != nil {
+		return x.Status
+	}
+	return ""
+}
+
+func (x *BatchReport) GetReportMd() []byte {
+	if x != nil {
+		return x.ReportMd
+	}
+	return nil
+}
+
+func (x *BatchReport) GetMetrics() map[string]string {
+	if x != nil {
+		return x.Metrics
+	}
+	return nil
+}
+
+func (x *BatchReport) GetStartedAtMs() int64 {
+	if x != nil {
+		return x.StartedAtMs
+	}
+	return 0
+}
+
+func (x *BatchReport) GetEndedAtMs() int64 {
+	if x != nil {
+		return x.EndedAtMs
+	}
+	return 0
+}
+
+func (x *BatchReport) GetError() string {
+	if x != nil {
+		return x.Error
+	}
+	return ""
+}
+
+func (x *BatchReport) GetReportHubs() []*ReportHub {
+	if x != nil {
+		return x.ReportHubs
+	}
+	return nil
+}
 
 // V002 P3 — remise MX directe (port 25) d'un message par l'enfant (rôle smtp).
 type SmtpSendCommand struct {
@@ -387,7 +756,7 @@ type SmtpSendCommand struct {
 
 func (x *SmtpSendCommand) Reset() {
 	*x = SmtpSendCommand{}
-	mi := &file_proto_mmhpb_miniminihub_proto_msgTypes[4]
+	mi := &file_proto_mmhpb_miniminihub_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -399,7 +768,7 @@ func (x *SmtpSendCommand) String() string {
 func (*SmtpSendCommand) ProtoMessage() {}
 
 func (x *SmtpSendCommand) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_mmhpb_miniminihub_proto_msgTypes[4]
+	mi := &file_proto_mmhpb_miniminihub_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -412,7 +781,7 @@ func (x *SmtpSendCommand) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SmtpSendCommand.ProtoReflect.Descriptor instead.
 func (*SmtpSendCommand) Descriptor() ([]byte, []int) {
-	return file_proto_mmhpb_miniminihub_proto_rawDescGZIP(), []int{4}
+	return file_proto_mmhpb_miniminihub_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *SmtpSendCommand) GetRequestId() string {
@@ -463,6 +832,7 @@ type ResultMsg struct {
 	// Types that are valid to be assigned to Payload:
 	//
 	//	*ResultMsg_SmtpResult
+	//	*ResultMsg_BatchReport
 	Payload       isResultMsg_Payload `protobuf_oneof:"payload"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -470,7 +840,7 @@ type ResultMsg struct {
 
 func (x *ResultMsg) Reset() {
 	*x = ResultMsg{}
-	mi := &file_proto_mmhpb_miniminihub_proto_msgTypes[5]
+	mi := &file_proto_mmhpb_miniminihub_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -482,7 +852,7 @@ func (x *ResultMsg) String() string {
 func (*ResultMsg) ProtoMessage() {}
 
 func (x *ResultMsg) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_mmhpb_miniminihub_proto_msgTypes[5]
+	mi := &file_proto_mmhpb_miniminihub_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -495,7 +865,7 @@ func (x *ResultMsg) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ResultMsg.ProtoReflect.Descriptor instead.
 func (*ResultMsg) Descriptor() ([]byte, []int) {
-	return file_proto_mmhpb_miniminihub_proto_rawDescGZIP(), []int{5}
+	return file_proto_mmhpb_miniminihub_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *ResultMsg) GetRequestId() string {
@@ -521,6 +891,15 @@ func (x *ResultMsg) GetSmtpResult() *SmtpResult {
 	return nil
 }
 
+func (x *ResultMsg) GetBatchReport() *BatchReport {
+	if x != nil {
+		if x, ok := x.Payload.(*ResultMsg_BatchReport); ok {
+			return x.BatchReport
+		}
+	}
+	return nil
+}
+
 type isResultMsg_Payload interface {
 	isResultMsg_Payload()
 }
@@ -529,7 +908,13 @@ type ResultMsg_SmtpResult struct {
 	SmtpResult *SmtpResult `protobuf:"bytes,2,opt,name=smtp_result,json=smtpResult,proto3,oneof"`
 }
 
+type ResultMsg_BatchReport struct {
+	BatchReport *BatchReport `protobuf:"bytes,3,opt,name=batch_report,json=batchReport,proto3,oneof"` // V002 P5
+}
+
 func (*ResultMsg_SmtpResult) isResultMsg_Payload() {}
+
+func (*ResultMsg_BatchReport) isResultMsg_Payload() {}
 
 type SmtpResult struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -545,7 +930,7 @@ type SmtpResult struct {
 
 func (x *SmtpResult) Reset() {
 	*x = SmtpResult{}
-	mi := &file_proto_mmhpb_miniminihub_proto_msgTypes[6]
+	mi := &file_proto_mmhpb_miniminihub_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -557,7 +942,7 @@ func (x *SmtpResult) String() string {
 func (*SmtpResult) ProtoMessage() {}
 
 func (x *SmtpResult) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_mmhpb_miniminihub_proto_msgTypes[6]
+	mi := &file_proto_mmhpb_miniminihub_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -570,7 +955,7 @@ func (x *SmtpResult) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SmtpResult.ProtoReflect.Descriptor instead.
 func (*SmtpResult) Descriptor() ([]byte, []int) {
-	return file_proto_mmhpb_miniminihub_proto_rawDescGZIP(), []int{6}
+	return file_proto_mmhpb_miniminihub_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *SmtpResult) GetAccepted() bool {
@@ -624,7 +1009,7 @@ type ResultAck struct {
 
 func (x *ResultAck) Reset() {
 	*x = ResultAck{}
-	mi := &file_proto_mmhpb_miniminihub_proto_msgTypes[7]
+	mi := &file_proto_mmhpb_miniminihub_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -636,7 +1021,7 @@ func (x *ResultAck) String() string {
 func (*ResultAck) ProtoMessage() {}
 
 func (x *ResultAck) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_mmhpb_miniminihub_proto_msgTypes[7]
+	mi := &file_proto_mmhpb_miniminihub_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -649,7 +1034,7 @@ func (x *ResultAck) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ResultAck.ProtoReflect.Descriptor instead.
 func (*ResultAck) Descriptor() ([]byte, []int) {
-	return file_proto_mmhpb_miniminihub_proto_rawDescGZIP(), []int{7}
+	return file_proto_mmhpb_miniminihub_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *ResultAck) GetAccepted() bool {
@@ -669,7 +1054,7 @@ type PingCommand struct {
 
 func (x *PingCommand) Reset() {
 	*x = PingCommand{}
-	mi := &file_proto_mmhpb_miniminihub_proto_msgTypes[8]
+	mi := &file_proto_mmhpb_miniminihub_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -681,7 +1066,7 @@ func (x *PingCommand) String() string {
 func (*PingCommand) ProtoMessage() {}
 
 func (x *PingCommand) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_mmhpb_miniminihub_proto_msgTypes[8]
+	mi := &file_proto_mmhpb_miniminihub_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -694,7 +1079,7 @@ func (x *PingCommand) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PingCommand.ProtoReflect.Descriptor instead.
 func (*PingCommand) Descriptor() ([]byte, []int) {
-	return file_proto_mmhpb_miniminihub_proto_rawDescGZIP(), []int{8}
+	return file_proto_mmhpb_miniminihub_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *PingCommand) GetNote() string {
@@ -715,7 +1100,7 @@ type RotateEgressCommand struct {
 
 func (x *RotateEgressCommand) Reset() {
 	*x = RotateEgressCommand{}
-	mi := &file_proto_mmhpb_miniminihub_proto_msgTypes[9]
+	mi := &file_proto_mmhpb_miniminihub_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -727,7 +1112,7 @@ func (x *RotateEgressCommand) String() string {
 func (*RotateEgressCommand) ProtoMessage() {}
 
 func (x *RotateEgressCommand) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_mmhpb_miniminihub_proto_msgTypes[9]
+	mi := &file_proto_mmhpb_miniminihub_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -740,7 +1125,7 @@ func (x *RotateEgressCommand) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RotateEgressCommand.ProtoReflect.Descriptor instead.
 func (*RotateEgressCommand) Descriptor() ([]byte, []int) {
-	return file_proto_mmhpb_miniminihub_proto_rawDescGZIP(), []int{9}
+	return file_proto_mmhpb_miniminihub_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *RotateEgressCommand) GetRequestId() string {
@@ -763,7 +1148,7 @@ type EgressOpenCommand struct {
 
 func (x *EgressOpenCommand) Reset() {
 	*x = EgressOpenCommand{}
-	mi := &file_proto_mmhpb_miniminihub_proto_msgTypes[10]
+	mi := &file_proto_mmhpb_miniminihub_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -775,7 +1160,7 @@ func (x *EgressOpenCommand) String() string {
 func (*EgressOpenCommand) ProtoMessage() {}
 
 func (x *EgressOpenCommand) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_mmhpb_miniminihub_proto_msgTypes[10]
+	mi := &file_proto_mmhpb_miniminihub_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -788,7 +1173,7 @@ func (x *EgressOpenCommand) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EgressOpenCommand.ProtoReflect.Descriptor instead.
 func (*EgressOpenCommand) Descriptor() ([]byte, []int) {
-	return file_proto_mmhpb_miniminihub_proto_rawDescGZIP(), []int{10}
+	return file_proto_mmhpb_miniminihub_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *EgressOpenCommand) GetConnId() string {
@@ -832,7 +1217,7 @@ type EgressFrame struct {
 
 func (x *EgressFrame) Reset() {
 	*x = EgressFrame{}
-	mi := &file_proto_mmhpb_miniminihub_proto_msgTypes[11]
+	mi := &file_proto_mmhpb_miniminihub_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -844,7 +1229,7 @@ func (x *EgressFrame) String() string {
 func (*EgressFrame) ProtoMessage() {}
 
 func (x *EgressFrame) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_mmhpb_miniminihub_proto_msgTypes[11]
+	mi := &file_proto_mmhpb_miniminihub_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -857,7 +1242,7 @@ func (x *EgressFrame) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EgressFrame.ProtoReflect.Descriptor instead.
 func (*EgressFrame) Descriptor() ([]byte, []int) {
-	return file_proto_mmhpb_miniminihub_proto_rawDescGZIP(), []int{11}
+	return file_proto_mmhpb_miniminihub_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *EgressFrame) GetConnId() string {
@@ -915,7 +1300,7 @@ const file_proto_mmhpb_miniminihub_proto_rawDesc = "" +
 	"\btrace_id\x18\x04 \x01(\tR\atraceId\"H\n" +
 	"\vPollRequest\x12%\n" +
 	"\x0eminiminihub_id\x18\x01 \x01(\tR\rminiminihubId\x12\x12\n" +
-	"\x04slug\x18\x02 \x01(\tR\x04slug\"\xda\x02\n" +
+	"\x04slug\x18\x02 \x01(\tR\x04slug\"\xac\x03\n" +
 	"\aCommand\x12\x1d\n" +
 	"\n" +
 	"command_id\x18\x01 \x01(\tR\tcommandId\x12 \n" +
@@ -926,8 +1311,58 @@ const file_proto_mmhpb_miniminihub_proto_rawDesc = "" +
 	"\vegress_open\x18\v \x01(\v2!.miniminihub.v1.EgressOpenCommandH\x00R\n" +
 	"egressOpen\x12J\n" +
 	"\rrotate_egress\x18\f \x01(\v2#.miniminihub.v1.RotateEgressCommandH\x00R\frotateEgress\x12>\n" +
-	"\tsmtp_send\x18\r \x01(\v2\x1f.miniminihub.v1.SmtpSendCommandH\x00R\bsmtpSendB\t\n" +
-	"\apayload\"\xaa\x01\n" +
+	"\tsmtp_send\x18\r \x01(\v2\x1f.miniminihub.v1.SmtpSendCommandH\x00R\bsmtpSend\x12P\n" +
+	"\x0fconfigure_batch\x18\x0e \x01(\v2%.miniminihub.v1.ConfigureBatchCommandH\x00R\x0econfigureBatchB\t\n" +
+	"\apayload\"e\n" +
+	"\tReportHub\x12\x17\n" +
+	"\ahub_key\x18\x01 \x01(\tR\x06hubKey\x12\x1e\n" +
+	"\n" +
+	"recipients\x18\x02 \x03(\tR\n" +
+	"recipients\x12\x1f\n" +
+	"\vsubject_tpl\x18\x03 \x01(\tR\n" +
+	"subjectTpl\"\x80\x05\n" +
+	"\aJobSpec\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x18\n" +
+	"\aenabled\x18\x02 \x01(\bR\aenabled\x12\x1a\n" +
+	"\bschedule\x18\x03 \x01(\tR\bschedule\x12\x1a\n" +
+	"\btimezone\x18\x04 \x01(\tR\btimezone\x12\x1d\n" +
+	"\n" +
+	"agent_kind\x18\x05 \x01(\tR\tagentKind\x12K\n" +
+	"\fagent_params\x18\x06 \x03(\v2(.miniminihub.v1.JobSpec.AgentParamsEntryR\vagentParams\x12'\n" +
+	"\x0fprompt_template\x18\a \x01(\tR\x0epromptTemplate\x12H\n" +
+	"\vprompt_vars\x18\b \x03(\v2'.miniminihub.v1.JobSpec.PromptVarsEntryR\n" +
+	"promptVars\x12\x1d\n" +
+	"\n" +
+	"timeout_ms\x18\t \x01(\x03R\ttimeoutMs\x12\x18\n" +
+	"\aoverlap\x18\n" +
+	" \x01(\tR\aoverlap\x12!\n" +
+	"\fmax_attempts\x18\v \x01(\x05R\vmaxAttempts\x12\x1d\n" +
+	"\n" +
+	"backoff_ms\x18\f \x01(\x03R\tbackoffMs\x12:\n" +
+	"\vreport_hubs\x18\r \x03(\v2\x19.miniminihub.v1.ReportHubR\n" +
+	"reportHubs\x1a>\n" +
+	"\x10AgentParamsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1a=\n" +
+	"\x0fPromptVarsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"D\n" +
+	"\x15ConfigureBatchCommand\x12+\n" +
+	"\x04jobs\x18\x01 \x03(\v2\x17.miniminihub.v1.JobSpecR\x04jobs\"\x86\x03\n" +
+	"\vBatchReport\x12\x15\n" +
+	"\x06job_id\x18\x01 \x01(\tR\x05jobId\x12\x15\n" +
+	"\x06run_id\x18\x02 \x01(\tR\x05runId\x12\x16\n" +
+	"\x06status\x18\x03 \x01(\tR\x06status\x12\x1b\n" +
+	"\treport_md\x18\x04 \x01(\fR\breportMd\x12B\n" +
+	"\ametrics\x18\x05 \x03(\v2(.miniminihub.v1.BatchReport.MetricsEntryR\ametrics\x12\"\n" +
+	"\rstarted_at_ms\x18\x06 \x01(\x03R\vstartedAtMs\x12\x1e\n" +
+	"\vended_at_ms\x18\a \x01(\x03R\tendedAtMs\x12\x14\n" +
+	"\x05error\x18\b \x01(\tR\x05error\x12:\n" +
+	"\vreport_hubs\x18\t \x03(\v2\x19.miniminihub.v1.ReportHubR\n" +
+	"reportHubs\x1a:\n" +
+	"\fMetricsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xaa\x01\n" +
 	"\x0fSmtpSendCommand\x12\x1d\n" +
 	"\n" +
 	"request_id\x18\x01 \x01(\tR\trequestId\x12\x1b\n" +
@@ -935,12 +1370,13 @@ const file_proto_mmhpb_miniminihub_proto_rawDesc = "" +
 	"\arcpt_to\x18\x03 \x03(\tR\x06rcptTo\x12\x12\n" +
 	"\x04data\x18\x04 \x01(\fR\x04data\x12\x1a\n" +
 	"\bstarttls\x18\x05 \x01(\bR\bstarttls\x12\x12\n" +
-	"\x04helo\x18\x06 \x01(\tR\x04helo\"t\n" +
+	"\x04helo\x18\x06 \x01(\tR\x04helo\"\xb6\x01\n" +
 	"\tResultMsg\x12\x1d\n" +
 	"\n" +
 	"request_id\x18\x01 \x01(\tR\trequestId\x12=\n" +
 	"\vsmtp_result\x18\x02 \x01(\v2\x1a.miniminihub.v1.SmtpResultH\x00R\n" +
-	"smtpResultB\t\n" +
+	"smtpResult\x12@\n" +
+	"\fbatch_report\x18\x03 \x01(\v2\x1b.miniminihub.v1.BatchReportH\x00R\vbatchReportB\t\n" +
 	"\apayload\"\xaf\x01\n" +
 	"\n" +
 	"SmtpResult\x12\x1a\n" +
@@ -986,42 +1422,57 @@ func file_proto_mmhpb_miniminihub_proto_rawDescGZIP() []byte {
 	return file_proto_mmhpb_miniminihub_proto_rawDescData
 }
 
-var file_proto_mmhpb_miniminihub_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
+var file_proto_mmhpb_miniminihub_proto_msgTypes = make([]protoimpl.MessageInfo, 20)
 var file_proto_mmhpb_miniminihub_proto_goTypes = []any{
-	(*HeartbeatRequest)(nil),    // 0: miniminihub.v1.HeartbeatRequest
-	(*HeartbeatResponse)(nil),   // 1: miniminihub.v1.HeartbeatResponse
-	(*PollRequest)(nil),         // 2: miniminihub.v1.PollRequest
-	(*Command)(nil),             // 3: miniminihub.v1.Command
-	(*SmtpSendCommand)(nil),     // 4: miniminihub.v1.SmtpSendCommand
-	(*ResultMsg)(nil),           // 5: miniminihub.v1.ResultMsg
-	(*SmtpResult)(nil),          // 6: miniminihub.v1.SmtpResult
-	(*ResultAck)(nil),           // 7: miniminihub.v1.ResultAck
-	(*PingCommand)(nil),         // 8: miniminihub.v1.PingCommand
-	(*RotateEgressCommand)(nil), // 9: miniminihub.v1.RotateEgressCommand
-	(*EgressOpenCommand)(nil),   // 10: miniminihub.v1.EgressOpenCommand
-	(*EgressFrame)(nil),         // 11: miniminihub.v1.EgressFrame
-	nil,                         // 12: miniminihub.v1.HeartbeatRequest.ConnsByServiceEntry
+	(*HeartbeatRequest)(nil),      // 0: miniminihub.v1.HeartbeatRequest
+	(*HeartbeatResponse)(nil),     // 1: miniminihub.v1.HeartbeatResponse
+	(*PollRequest)(nil),           // 2: miniminihub.v1.PollRequest
+	(*Command)(nil),               // 3: miniminihub.v1.Command
+	(*ReportHub)(nil),             // 4: miniminihub.v1.ReportHub
+	(*JobSpec)(nil),               // 5: miniminihub.v1.JobSpec
+	(*ConfigureBatchCommand)(nil), // 6: miniminihub.v1.ConfigureBatchCommand
+	(*BatchReport)(nil),           // 7: miniminihub.v1.BatchReport
+	(*SmtpSendCommand)(nil),       // 8: miniminihub.v1.SmtpSendCommand
+	(*ResultMsg)(nil),             // 9: miniminihub.v1.ResultMsg
+	(*SmtpResult)(nil),            // 10: miniminihub.v1.SmtpResult
+	(*ResultAck)(nil),             // 11: miniminihub.v1.ResultAck
+	(*PingCommand)(nil),           // 12: miniminihub.v1.PingCommand
+	(*RotateEgressCommand)(nil),   // 13: miniminihub.v1.RotateEgressCommand
+	(*EgressOpenCommand)(nil),     // 14: miniminihub.v1.EgressOpenCommand
+	(*EgressFrame)(nil),           // 15: miniminihub.v1.EgressFrame
+	nil,                           // 16: miniminihub.v1.HeartbeatRequest.ConnsByServiceEntry
+	nil,                           // 17: miniminihub.v1.JobSpec.AgentParamsEntry
+	nil,                           // 18: miniminihub.v1.JobSpec.PromptVarsEntry
+	nil,                           // 19: miniminihub.v1.BatchReport.MetricsEntry
 }
 var file_proto_mmhpb_miniminihub_proto_depIdxs = []int32{
-	12, // 0: miniminihub.v1.HeartbeatRequest.conns_by_service:type_name -> miniminihub.v1.HeartbeatRequest.ConnsByServiceEntry
-	8,  // 1: miniminihub.v1.Command.ping:type_name -> miniminihub.v1.PingCommand
-	10, // 2: miniminihub.v1.Command.egress_open:type_name -> miniminihub.v1.EgressOpenCommand
-	9,  // 3: miniminihub.v1.Command.rotate_egress:type_name -> miniminihub.v1.RotateEgressCommand
-	4,  // 4: miniminihub.v1.Command.smtp_send:type_name -> miniminihub.v1.SmtpSendCommand
-	6,  // 5: miniminihub.v1.ResultMsg.smtp_result:type_name -> miniminihub.v1.SmtpResult
-	0,  // 6: miniminihub.v1.MiniMiniHubControl.Heartbeat:input_type -> miniminihub.v1.HeartbeatRequest
-	2,  // 7: miniminihub.v1.MiniMiniHubControl.PollCommand:input_type -> miniminihub.v1.PollRequest
-	11, // 8: miniminihub.v1.MiniMiniHubControl.EgressStream:input_type -> miniminihub.v1.EgressFrame
-	5,  // 9: miniminihub.v1.MiniMiniHubControl.PushResult:input_type -> miniminihub.v1.ResultMsg
-	1,  // 10: miniminihub.v1.MiniMiniHubControl.Heartbeat:output_type -> miniminihub.v1.HeartbeatResponse
-	3,  // 11: miniminihub.v1.MiniMiniHubControl.PollCommand:output_type -> miniminihub.v1.Command
-	11, // 12: miniminihub.v1.MiniMiniHubControl.EgressStream:output_type -> miniminihub.v1.EgressFrame
-	7,  // 13: miniminihub.v1.MiniMiniHubControl.PushResult:output_type -> miniminihub.v1.ResultAck
-	10, // [10:14] is the sub-list for method output_type
-	6,  // [6:10] is the sub-list for method input_type
-	6,  // [6:6] is the sub-list for extension type_name
-	6,  // [6:6] is the sub-list for extension extendee
-	0,  // [0:6] is the sub-list for field type_name
+	16, // 0: miniminihub.v1.HeartbeatRequest.conns_by_service:type_name -> miniminihub.v1.HeartbeatRequest.ConnsByServiceEntry
+	12, // 1: miniminihub.v1.Command.ping:type_name -> miniminihub.v1.PingCommand
+	14, // 2: miniminihub.v1.Command.egress_open:type_name -> miniminihub.v1.EgressOpenCommand
+	13, // 3: miniminihub.v1.Command.rotate_egress:type_name -> miniminihub.v1.RotateEgressCommand
+	8,  // 4: miniminihub.v1.Command.smtp_send:type_name -> miniminihub.v1.SmtpSendCommand
+	6,  // 5: miniminihub.v1.Command.configure_batch:type_name -> miniminihub.v1.ConfigureBatchCommand
+	17, // 6: miniminihub.v1.JobSpec.agent_params:type_name -> miniminihub.v1.JobSpec.AgentParamsEntry
+	18, // 7: miniminihub.v1.JobSpec.prompt_vars:type_name -> miniminihub.v1.JobSpec.PromptVarsEntry
+	4,  // 8: miniminihub.v1.JobSpec.report_hubs:type_name -> miniminihub.v1.ReportHub
+	5,  // 9: miniminihub.v1.ConfigureBatchCommand.jobs:type_name -> miniminihub.v1.JobSpec
+	19, // 10: miniminihub.v1.BatchReport.metrics:type_name -> miniminihub.v1.BatchReport.MetricsEntry
+	4,  // 11: miniminihub.v1.BatchReport.report_hubs:type_name -> miniminihub.v1.ReportHub
+	10, // 12: miniminihub.v1.ResultMsg.smtp_result:type_name -> miniminihub.v1.SmtpResult
+	7,  // 13: miniminihub.v1.ResultMsg.batch_report:type_name -> miniminihub.v1.BatchReport
+	0,  // 14: miniminihub.v1.MiniMiniHubControl.Heartbeat:input_type -> miniminihub.v1.HeartbeatRequest
+	2,  // 15: miniminihub.v1.MiniMiniHubControl.PollCommand:input_type -> miniminihub.v1.PollRequest
+	15, // 16: miniminihub.v1.MiniMiniHubControl.EgressStream:input_type -> miniminihub.v1.EgressFrame
+	9,  // 17: miniminihub.v1.MiniMiniHubControl.PushResult:input_type -> miniminihub.v1.ResultMsg
+	1,  // 18: miniminihub.v1.MiniMiniHubControl.Heartbeat:output_type -> miniminihub.v1.HeartbeatResponse
+	3,  // 19: miniminihub.v1.MiniMiniHubControl.PollCommand:output_type -> miniminihub.v1.Command
+	15, // 20: miniminihub.v1.MiniMiniHubControl.EgressStream:output_type -> miniminihub.v1.EgressFrame
+	11, // 21: miniminihub.v1.MiniMiniHubControl.PushResult:output_type -> miniminihub.v1.ResultAck
+	18, // [18:22] is the sub-list for method output_type
+	14, // [14:18] is the sub-list for method input_type
+	14, // [14:14] is the sub-list for extension type_name
+	14, // [14:14] is the sub-list for extension extendee
+	0,  // [0:14] is the sub-list for field type_name
 }
 
 func init() { file_proto_mmhpb_miniminihub_proto_init() }
@@ -1034,9 +1485,11 @@ func file_proto_mmhpb_miniminihub_proto_init() {
 		(*Command_EgressOpen)(nil),
 		(*Command_RotateEgress)(nil),
 		(*Command_SmtpSend)(nil),
+		(*Command_ConfigureBatch)(nil),
 	}
-	file_proto_mmhpb_miniminihub_proto_msgTypes[5].OneofWrappers = []any{
+	file_proto_mmhpb_miniminihub_proto_msgTypes[9].OneofWrappers = []any{
 		(*ResultMsg_SmtpResult)(nil),
+		(*ResultMsg_BatchReport)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -1044,7 +1497,7 @@ func file_proto_mmhpb_miniminihub_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_mmhpb_miniminihub_proto_rawDesc), len(file_proto_mmhpb_miniminihub_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   13,
+			NumMessages:   20,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

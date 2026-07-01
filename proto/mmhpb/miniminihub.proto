@@ -58,7 +58,47 @@ message Command {
     EgressOpenCommand   egress_open   = 11;
     RotateEgressCommand rotate_egress = 12; // V002 P2 : NEWNYM — rotation de l'IP de sortie TOR
     SmtpSendCommand     smtp_send     = 13; // V002 P3 : remise MX directe d'un message
+    ConfigureBatchCommand configure_batch = 14; // V002 P5 : (re)configure les jobs batch
   }
+}
+
+// V002 P5 — Agent Batch (voir grpc-contracts pour la doc complète).
+message ReportHub {
+  string hub_key             = 1;
+  repeated string recipients = 2; // vide = pas de mail
+  string subject_tpl         = 3;
+}
+
+message JobSpec {
+  string id               = 1;
+  bool   enabled          = 2;
+  string schedule         = 3;
+  string timezone         = 4;
+  string agent_kind       = 5;
+  map<string,string> agent_params = 6;
+  string prompt_template  = 7;
+  map<string,string> prompt_vars  = 8;
+  int64  timeout_ms       = 9;
+  string overlap          = 10;
+  int32  max_attempts     = 11;
+  int64  backoff_ms       = 12;
+  repeated ReportHub report_hubs = 13;
+}
+
+message ConfigureBatchCommand {
+  repeated JobSpec jobs = 1;
+}
+
+message BatchReport {
+  string job_id           = 1;
+  string run_id           = 2;
+  string status           = 3;
+  bytes  report_md        = 4;
+  map<string,string> metrics = 5;
+  int64  started_at_ms    = 6;
+  int64  ended_at_ms      = 7;
+  string error            = 8;
+  repeated ReportHub report_hubs = 9;
 }
 
 // V002 P3 — remise MX directe (port 25) d'un message par l'enfant (rôle smtp).
@@ -75,6 +115,7 @@ message ResultMsg {
   string request_id = 1;
   oneof payload {
     SmtpResult smtp_result = 2;
+    BatchReport batch_report = 3; // V002 P5
   }
 }
 

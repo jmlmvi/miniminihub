@@ -151,6 +151,21 @@ func (c *Client) PushSmtpResult(ctx context.Context, r SmtpResultData) error {
 	return nil
 }
 
+// PushBatchReport remonte un rapport batch au parent (V002 P5), via le RPC
+// PushResult (ResultMsg.batch_report). Corrélé par run_id.
+func (c *Client) PushBatchReport(ctx context.Context, rep *pb.BatchReport) error {
+	cctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+	_, err := c.ctrl.PushResult(cctx, &pb.ResultMsg{
+		RequestId: rep.GetRunId(),
+		Payload:   &pb.ResultMsg_BatchReport{BatchReport: rep},
+	})
+	if err != nil {
+		return fmt.Errorf("push batch report run=%s: %w", rep.GetRunId(), err)
+	}
+	return nil
+}
+
 // EgressStream ouvre le flux bidi d'égress vers le parent (proxy de sortie, D-17).
 func (c *Client) EgressStream(ctx context.Context) (pb.MiniMiniHubControl_EgressStreamClient, error) {
 	stream, err := c.ctrl.EgressStream(ctx)

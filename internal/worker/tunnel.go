@@ -23,6 +23,9 @@ const TopicRotate = "egress_rotate"
 // TopicSmtp = topic bus des demandes de remise SMTP (rôle smtp, V002 P3).
 const TopicSmtp = "smtp_send"
 
+// TopicBatch = topic bus des (re)configurations de jobs batch (rôle batch, V002 P5).
+const TopicBatch = "batch_configure"
+
 // TunnelWorker maintient le canal sortant partagé : heartbeat + pollcommand.
 // Le canal gRPC lui-même est connecté dans main et partagé via Deps.Tunnel.
 // Toujours actif (priorité 100).
@@ -147,6 +150,9 @@ func (w *TunnelWorker) handleCommand(cmd *pb.Command) {
 	case *pb.Command_SmtpSend:
 		w.log.Info("smtp send requested", "request_id", p.SmtpSend.RequestId, "rcpts", len(p.SmtpSend.RcptTo))
 		w.bus.Publish(TopicSmtp, p.SmtpSend)
+	case *pb.Command_ConfigureBatch:
+		w.log.Info("batch configure requested", "jobs", len(p.ConfigureBatch.Jobs))
+		w.bus.Publish(TopicBatch, p.ConfigureBatch)
 	default:
 		w.log.Warn("unknown command", "command_id", cmd.CommandId)
 	}
