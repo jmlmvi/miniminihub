@@ -91,15 +91,27 @@ func (c *Client) Close() {
 }
 
 // Heartbeat envoie un battement unaire avec timeout dérivé du context (R11).
-func (c *Client) Heartbeat(ctx context.Context, seq uint64) (*pb.HeartbeatResponse, error) {
+// Load = charge instantanée de l'agent, jointe à chaque battement (V002 P1).
+type Load struct {
+	CPUPct  int32
+	MemPct  int32
+	DiskPct int32
+	Conns   map[string]int32
+}
+
+func (c *Client) Heartbeat(ctx context.Context, seq uint64, load Load) (*pb.HeartbeatResponse, error) {
 	hbCtx, cancel := context.WithTimeout(ctx, 15*time.Second)
 	defer cancel()
 
 	resp, err := c.ctrl.Heartbeat(hbCtx, &pb.HeartbeatRequest{
-		MiniminihubId: c.id,
-		Slug:          c.slug,
-		ClientTsMs:    time.Now().UnixMilli(),
-		Sequence:      seq,
+		MiniminihubId:  c.id,
+		Slug:           c.slug,
+		ClientTsMs:     time.Now().UnixMilli(),
+		Sequence:       seq,
+		CpuLoadPct:     load.CPUPct,
+		MemPct:         load.MemPct,
+		DiskPct:        load.DiskPct,
+		ConnsByService: load.Conns,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("heartbeat seq=%d: %w", seq, err)

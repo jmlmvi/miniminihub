@@ -67,10 +67,21 @@ func (w *TunnelWorker) session(ctx context.Context) error {
 		ticker := time.NewTicker(time.Duration(curMs) * time.Millisecond)
 		defer ticker.Stop()
 		var seq uint64
+		prevCPU, prevOK := readCPUSample()
 
 		send := func() error {
 			seq++
-			resp, err := w.client.Heartbeat(sctx, seq)
+			// Charge instantanée (léger) : %CPU = delta /proc/stat entre deux battements.
+			load := tunnel.Load{MemPct: memPct(), DiskPct: diskPct("/"), Conns: connsByService()}
+			if cur, ok := readCPUSample(); ok {
+				if prevOK {
+					if pct, ok2 := cpuPct(prevCPU, cur); ok2 {
+						load.CPUPct = pct
+					}
+				}
+				prevCPU, prevOK = cur, true
+			}
+			resp, err := w.client.Heartbeat(sctx, seq, load)
 			if err != nil {
 				return err
 			}

@@ -117,6 +117,8 @@ func (w *ProxyWorker) handle(ctx context.Context, cmd *pb.EgressOpenCommand) {
 		return
 	}
 	defer conn.Close()
+	egressBegin(cmd.ViaTor) // jauge conns actives par service (V002 P1)
+	defer egressEnd(cmd.ViaTor)
 	n, _ := w.store.Incr("egress_connections")
 	log.Info("egress established", "via_tor", cmd.ViaTor, "total_egress", n)
 

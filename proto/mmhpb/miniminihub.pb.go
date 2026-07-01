@@ -27,8 +27,13 @@ type HeartbeatRequest struct {
 	Slug          string                 `protobuf:"bytes,2,opt,name=slug,proto3" json:"slug,omitempty"`
 	ClientTsMs    int64                  `protobuf:"varint,3,opt,name=client_ts_ms,json=clientTsMs,proto3" json:"client_ts_ms,omitempty"`
 	Sequence      uint64                 `protobuf:"varint,4,opt,name=sequence,proto3" json:"sequence,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	// V002 P1 — remontée de charge (léger) : /proc + statfs à chaque battement.
+	CpuLoadPct     int32            `protobuf:"varint,5,opt,name=cpu_load_pct,json=cpuLoadPct,proto3" json:"cpu_load_pct,omitempty"`
+	MemPct         int32            `protobuf:"varint,6,opt,name=mem_pct,json=memPct,proto3" json:"mem_pct,omitempty"`
+	DiskPct        int32            `protobuf:"varint,7,opt,name=disk_pct,json=diskPct,proto3" json:"disk_pct,omitempty"`
+	ConnsByService map[string]int32 `protobuf:"bytes,8,rep,name=conns_by_service,json=connsByService,proto3" json:"conns_by_service,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"varint,2,opt,name=value"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *HeartbeatRequest) Reset() {
@@ -87,6 +92,34 @@ func (x *HeartbeatRequest) GetSequence() uint64 {
 		return x.Sequence
 	}
 	return 0
+}
+
+func (x *HeartbeatRequest) GetCpuLoadPct() int32 {
+	if x != nil {
+		return x.CpuLoadPct
+	}
+	return 0
+}
+
+func (x *HeartbeatRequest) GetMemPct() int32 {
+	if x != nil {
+		return x.MemPct
+	}
+	return 0
+}
+
+func (x *HeartbeatRequest) GetDiskPct() int32 {
+	if x != nil {
+		return x.DiskPct
+	}
+	return 0
+}
+
+func (x *HeartbeatRequest) GetConnsByService() map[string]int32 {
+	if x != nil {
+		return x.ConnsByService
+	}
+	return nil
 }
 
 type HeartbeatResponse struct {
@@ -556,13 +589,21 @@ var File_proto_mmhpb_miniminihub_proto protoreflect.FileDescriptor
 
 const file_proto_mmhpb_miniminihub_proto_rawDesc = "" +
 	"\n" +
-	"\x1dproto/mmhpb/miniminihub.proto\x12\x0eminiminihub.v1\"\x8b\x01\n" +
+	"\x1dproto/mmhpb/miniminihub.proto\x12\x0eminiminihub.v1\"\x84\x03\n" +
 	"\x10HeartbeatRequest\x12%\n" +
 	"\x0eminiminihub_id\x18\x01 \x01(\tR\rminiminihubId\x12\x12\n" +
 	"\x04slug\x18\x02 \x01(\tR\x04slug\x12 \n" +
 	"\fclient_ts_ms\x18\x03 \x01(\x03R\n" +
 	"clientTsMs\x12\x1a\n" +
-	"\bsequence\x18\x04 \x01(\x04R\bsequence\"\x96\x01\n" +
+	"\bsequence\x18\x04 \x01(\x04R\bsequence\x12 \n" +
+	"\fcpu_load_pct\x18\x05 \x01(\x05R\n" +
+	"cpuLoadPct\x12\x17\n" +
+	"\amem_pct\x18\x06 \x01(\x05R\x06memPct\x12\x19\n" +
+	"\bdisk_pct\x18\a \x01(\x05R\adiskPct\x12^\n" +
+	"\x10conns_by_service\x18\b \x03(\v24.miniminihub.v1.HeartbeatRequest.ConnsByServiceEntryR\x0econnsByService\x1aA\n" +
+	"\x13ConnsByServiceEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\x05R\x05value:\x028\x01\"\x96\x01\n" +
 	"\x11HeartbeatResponse\x12\x1a\n" +
 	"\baccepted\x18\x01 \x01(\bR\baccepted\x12 \n" +
 	"\fserver_ts_ms\x18\x02 \x01(\x03R\n" +
@@ -615,7 +656,7 @@ func file_proto_mmhpb_miniminihub_proto_rawDescGZIP() []byte {
 	return file_proto_mmhpb_miniminihub_proto_rawDescData
 }
 
-var file_proto_mmhpb_miniminihub_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
+var file_proto_mmhpb_miniminihub_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
 var file_proto_mmhpb_miniminihub_proto_goTypes = []any{
 	(*HeartbeatRequest)(nil),    // 0: miniminihub.v1.HeartbeatRequest
 	(*HeartbeatResponse)(nil),   // 1: miniminihub.v1.HeartbeatResponse
@@ -625,22 +666,24 @@ var file_proto_mmhpb_miniminihub_proto_goTypes = []any{
 	(*RotateEgressCommand)(nil), // 5: miniminihub.v1.RotateEgressCommand
 	(*EgressOpenCommand)(nil),   // 6: miniminihub.v1.EgressOpenCommand
 	(*EgressFrame)(nil),         // 7: miniminihub.v1.EgressFrame
+	nil,                         // 8: miniminihub.v1.HeartbeatRequest.ConnsByServiceEntry
 }
 var file_proto_mmhpb_miniminihub_proto_depIdxs = []int32{
-	4, // 0: miniminihub.v1.Command.ping:type_name -> miniminihub.v1.PingCommand
-	6, // 1: miniminihub.v1.Command.egress_open:type_name -> miniminihub.v1.EgressOpenCommand
-	5, // 2: miniminihub.v1.Command.rotate_egress:type_name -> miniminihub.v1.RotateEgressCommand
-	0, // 3: miniminihub.v1.MiniMiniHubControl.Heartbeat:input_type -> miniminihub.v1.HeartbeatRequest
-	2, // 4: miniminihub.v1.MiniMiniHubControl.PollCommand:input_type -> miniminihub.v1.PollRequest
-	7, // 5: miniminihub.v1.MiniMiniHubControl.EgressStream:input_type -> miniminihub.v1.EgressFrame
-	1, // 6: miniminihub.v1.MiniMiniHubControl.Heartbeat:output_type -> miniminihub.v1.HeartbeatResponse
-	3, // 7: miniminihub.v1.MiniMiniHubControl.PollCommand:output_type -> miniminihub.v1.Command
-	7, // 8: miniminihub.v1.MiniMiniHubControl.EgressStream:output_type -> miniminihub.v1.EgressFrame
-	6, // [6:9] is the sub-list for method output_type
-	3, // [3:6] is the sub-list for method input_type
-	3, // [3:3] is the sub-list for extension type_name
-	3, // [3:3] is the sub-list for extension extendee
-	0, // [0:3] is the sub-list for field type_name
+	8, // 0: miniminihub.v1.HeartbeatRequest.conns_by_service:type_name -> miniminihub.v1.HeartbeatRequest.ConnsByServiceEntry
+	4, // 1: miniminihub.v1.Command.ping:type_name -> miniminihub.v1.PingCommand
+	6, // 2: miniminihub.v1.Command.egress_open:type_name -> miniminihub.v1.EgressOpenCommand
+	5, // 3: miniminihub.v1.Command.rotate_egress:type_name -> miniminihub.v1.RotateEgressCommand
+	0, // 4: miniminihub.v1.MiniMiniHubControl.Heartbeat:input_type -> miniminihub.v1.HeartbeatRequest
+	2, // 5: miniminihub.v1.MiniMiniHubControl.PollCommand:input_type -> miniminihub.v1.PollRequest
+	7, // 6: miniminihub.v1.MiniMiniHubControl.EgressStream:input_type -> miniminihub.v1.EgressFrame
+	1, // 7: miniminihub.v1.MiniMiniHubControl.Heartbeat:output_type -> miniminihub.v1.HeartbeatResponse
+	3, // 8: miniminihub.v1.MiniMiniHubControl.PollCommand:output_type -> miniminihub.v1.Command
+	7, // 9: miniminihub.v1.MiniMiniHubControl.EgressStream:output_type -> miniminihub.v1.EgressFrame
+	7, // [7:10] is the sub-list for method output_type
+	4, // [4:7] is the sub-list for method input_type
+	4, // [4:4] is the sub-list for extension type_name
+	4, // [4:4] is the sub-list for extension extendee
+	0, // [0:4] is the sub-list for field type_name
 }
 
 func init() { file_proto_mmhpb_miniminihub_proto_init() }
@@ -659,7 +702,7 @@ func file_proto_mmhpb_miniminihub_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_mmhpb_miniminihub_proto_rawDesc), len(file_proto_mmhpb_miniminihub_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   8,
+			NumMessages:   9,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

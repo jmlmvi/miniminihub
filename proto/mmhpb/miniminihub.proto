@@ -27,6 +27,11 @@ message HeartbeatRequest {
   string slug            = 2;
   int64  client_ts_ms    = 3;
   uint64 sequence        = 4;
+  // V002 P1 — remontée de charge (léger) : /proc + statfs à chaque battement.
+  int32  cpu_load_pct    = 5;
+  int32  mem_pct         = 6;
+  int32  disk_pct        = 7;
+  map<string, int32> conns_by_service = 8;
 }
 
 message HeartbeatResponse {
