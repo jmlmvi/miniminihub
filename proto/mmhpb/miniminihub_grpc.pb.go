@@ -22,6 +22,7 @@ const (
 	MiniMiniHubControl_Heartbeat_FullMethodName    = "/miniminihub.v1.MiniMiniHubControl/Heartbeat"
 	MiniMiniHubControl_PollCommand_FullMethodName  = "/miniminihub.v1.MiniMiniHubControl/PollCommand"
 	MiniMiniHubControl_EgressStream_FullMethodName = "/miniminihub.v1.MiniMiniHubControl/EgressStream"
+	MiniMiniHubControl_PushResult_FullMethodName   = "/miniminihub.v1.MiniMiniHubControl/PushResult"
 )
 
 // MiniMiniHubControlClient is the client API for MiniMiniHubControl service.
@@ -35,6 +36,9 @@ type MiniMiniHubControlClient interface {
 	// Proxy de sortie (D-17) : l'enfant ouvre ce flux bidi pour relayer une
 	// connexion d'égress. 1er frame = conn_id ; ensuite bytes dans les 2 sens.
 	EgressStream(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[EgressFrame, EgressFrame], error)
+	// V002 P3 : l'enfant remonte le résultat d'une commande async (envoi SMTP),
+	// corrélé par request_id. Unary sortant.
+	PushResult(ctx context.Context, in *ResultMsg, opts ...grpc.CallOption) (*ResultAck, error)
 }
 
 type miniMiniHubControlClient struct {
@@ -87,6 +91,16 @@ func (c *miniMiniHubControlClient) EgressStream(ctx context.Context, opts ...grp
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type MiniMiniHubControl_EgressStreamClient = grpc.BidiStreamingClient[EgressFrame, EgressFrame]
 
+func (c *miniMiniHubControlClient) PushResult(ctx context.Context, in *ResultMsg, opts ...grpc.CallOption) (*ResultAck, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ResultAck)
+	err := c.cc.Invoke(ctx, MiniMiniHubControl_PushResult_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // MiniMiniHubControlServer is the server API for MiniMiniHubControl service.
 // All implementations must embed UnimplementedMiniMiniHubControlServer
 // for forward compatibility.
@@ -98,6 +112,9 @@ type MiniMiniHubControlServer interface {
 	// Proxy de sortie (D-17) : l'enfant ouvre ce flux bidi pour relayer une
 	// connexion d'égress. 1er frame = conn_id ; ensuite bytes dans les 2 sens.
 	EgressStream(grpc.BidiStreamingServer[EgressFrame, EgressFrame]) error
+	// V002 P3 : l'enfant remonte le résultat d'une commande async (envoi SMTP),
+	// corrélé par request_id. Unary sortant.
+	PushResult(context.Context, *ResultMsg) (*ResultAck, error)
 	mustEmbedUnimplementedMiniMiniHubControlServer()
 }
 
@@ -116,6 +133,9 @@ func (UnimplementedMiniMiniHubControlServer) PollCommand(*PollRequest, grpc.Serv
 }
 func (UnimplementedMiniMiniHubControlServer) EgressStream(grpc.BidiStreamingServer[EgressFrame, EgressFrame]) error {
 	return status.Error(codes.Unimplemented, "method EgressStream not implemented")
+}
+func (UnimplementedMiniMiniHubControlServer) PushResult(context.Context, *ResultMsg) (*ResultAck, error) {
+	return nil, status.Error(codes.Unimplemented, "method PushResult not implemented")
 }
 func (UnimplementedMiniMiniHubControlServer) mustEmbedUnimplementedMiniMiniHubControlServer() {}
 func (UnimplementedMiniMiniHubControlServer) testEmbeddedByValue()                            {}
@@ -174,6 +194,24 @@ func _MiniMiniHubControl_EgressStream_Handler(srv interface{}, stream grpc.Serve
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type MiniMiniHubControl_EgressStreamServer = grpc.BidiStreamingServer[EgressFrame, EgressFrame]
 
+func _MiniMiniHubControl_PushResult_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ResultMsg)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MiniMiniHubControlServer).PushResult(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: MiniMiniHubControl_PushResult_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MiniMiniHubControlServer).PushResult(ctx, req.(*ResultMsg))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // MiniMiniHubControl_ServiceDesc is the grpc.ServiceDesc for MiniMiniHubControl service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -184,6 +222,10 @@ var MiniMiniHubControl_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Heartbeat",
 			Handler:    _MiniMiniHubControl_Heartbeat_Handler,
+		},
+		{
+			MethodName: "PushResult",
+			Handler:    _MiniMiniHubControl_PushResult_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

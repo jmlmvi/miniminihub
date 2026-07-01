@@ -68,6 +68,9 @@ func run() error {
 	if cfg.HasRole("proxy") {
 		workers = append(workers, worker.NewProxy())
 	}
+	if cfg.HasRole("smtp") {
+		workers = append(workers, worker.NewSmtp())
+	}
 	log.Info("workers registered", "count", len(workers), "roles", cfg.Roles)
 
 	return mop.New(deps, workers...).Run(ctx)

@@ -20,6 +20,9 @@ const TopicEgress = "egress"
 // TopicRotate = topic bus des demandes de rotation TOR (NEWNYM, V002 P2).
 const TopicRotate = "egress_rotate"
 
+// TopicSmtp = topic bus des demandes de remise SMTP (rôle smtp, V002 P3).
+const TopicSmtp = "smtp_send"
+
 // TunnelWorker maintient le canal sortant partagé : heartbeat + pollcommand.
 // Le canal gRPC lui-même est connecté dans main et partagé via Deps.Tunnel.
 // Toujours actif (priorité 100).
@@ -141,6 +144,9 @@ func (w *TunnelWorker) handleCommand(cmd *pb.Command) {
 	case *pb.Command_RotateEgress:
 		w.log.Info("egress rotate (NEWNYM) requested", "request_id", p.RotateEgress.RequestId)
 		w.bus.Publish(TopicRotate, p.RotateEgress)
+	case *pb.Command_SmtpSend:
+		w.log.Info("smtp send requested", "request_id", p.SmtpSend.RequestId, "rcpts", len(p.SmtpSend.RcptTo))
+		w.bus.Publish(TopicSmtp, p.SmtpSend)
 	default:
 		w.log.Warn("unknown command", "command_id", cmd.CommandId)
 	}

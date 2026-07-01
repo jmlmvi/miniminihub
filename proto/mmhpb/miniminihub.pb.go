@@ -251,6 +251,7 @@ type Command struct {
 	//	*Command_Ping
 	//	*Command_EgressOpen
 	//	*Command_RotateEgress
+	//	*Command_SmtpSend
 	Payload       isCommand_Payload `protobuf_oneof:"payload"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -334,6 +335,15 @@ func (x *Command) GetRotateEgress() *RotateEgressCommand {
 	return nil
 }
 
+func (x *Command) GetSmtpSend() *SmtpSendCommand {
+	if x != nil {
+		if x, ok := x.Payload.(*Command_SmtpSend); ok {
+			return x.SmtpSend
+		}
+	}
+	return nil
+}
+
 type isCommand_Payload interface {
 	isCommand_Payload()
 }
@@ -350,11 +360,304 @@ type Command_RotateEgress struct {
 	RotateEgress *RotateEgressCommand `protobuf:"bytes,12,opt,name=rotate_egress,json=rotateEgress,proto3,oneof"` // V002 P2 : NEWNYM — rotation de l'IP de sortie TOR
 }
 
+type Command_SmtpSend struct {
+	SmtpSend *SmtpSendCommand `protobuf:"bytes,13,opt,name=smtp_send,json=smtpSend,proto3,oneof"` // V002 P3 : remise MX directe d'un message
+}
+
 func (*Command_Ping) isCommand_Payload() {}
 
 func (*Command_EgressOpen) isCommand_Payload() {}
 
 func (*Command_RotateEgress) isCommand_Payload() {}
+
+func (*Command_SmtpSend) isCommand_Payload() {}
+
+// V002 P3 — remise MX directe (port 25) d'un message par l'enfant (rôle smtp).
+type SmtpSendCommand struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	RequestId     string                 `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
+	MailFrom      string                 `protobuf:"bytes,2,opt,name=mail_from,json=mailFrom,proto3" json:"mail_from,omitempty"`
+	RcptTo        []string               `protobuf:"bytes,3,rep,name=rcpt_to,json=rcptTo,proto3" json:"rcpt_to,omitempty"`
+	Data          []byte                 `protobuf:"bytes,4,opt,name=data,proto3" json:"data,omitempty"`
+	Starttls      bool                   `protobuf:"varint,5,opt,name=starttls,proto3" json:"starttls,omitempty"`
+	Helo          string                 `protobuf:"bytes,6,opt,name=helo,proto3" json:"helo,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SmtpSendCommand) Reset() {
+	*x = SmtpSendCommand{}
+	mi := &file_proto_mmhpb_miniminihub_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SmtpSendCommand) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SmtpSendCommand) ProtoMessage() {}
+
+func (x *SmtpSendCommand) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_mmhpb_miniminihub_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SmtpSendCommand.ProtoReflect.Descriptor instead.
+func (*SmtpSendCommand) Descriptor() ([]byte, []int) {
+	return file_proto_mmhpb_miniminihub_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *SmtpSendCommand) GetRequestId() string {
+	if x != nil {
+		return x.RequestId
+	}
+	return ""
+}
+
+func (x *SmtpSendCommand) GetMailFrom() string {
+	if x != nil {
+		return x.MailFrom
+	}
+	return ""
+}
+
+func (x *SmtpSendCommand) GetRcptTo() []string {
+	if x != nil {
+		return x.RcptTo
+	}
+	return nil
+}
+
+func (x *SmtpSendCommand) GetData() []byte {
+	if x != nil {
+		return x.Data
+	}
+	return nil
+}
+
+func (x *SmtpSendCommand) GetStarttls() bool {
+	if x != nil {
+		return x.Starttls
+	}
+	return false
+}
+
+func (x *SmtpSendCommand) GetHelo() string {
+	if x != nil {
+		return x.Helo
+	}
+	return ""
+}
+
+type ResultMsg struct {
+	state     protoimpl.MessageState `protogen:"open.v1"`
+	RequestId string                 `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
+	// Types that are valid to be assigned to Payload:
+	//
+	//	*ResultMsg_SmtpResult
+	Payload       isResultMsg_Payload `protobuf_oneof:"payload"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ResultMsg) Reset() {
+	*x = ResultMsg{}
+	mi := &file_proto_mmhpb_miniminihub_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ResultMsg) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ResultMsg) ProtoMessage() {}
+
+func (x *ResultMsg) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_mmhpb_miniminihub_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ResultMsg.ProtoReflect.Descriptor instead.
+func (*ResultMsg) Descriptor() ([]byte, []int) {
+	return file_proto_mmhpb_miniminihub_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *ResultMsg) GetRequestId() string {
+	if x != nil {
+		return x.RequestId
+	}
+	return ""
+}
+
+func (x *ResultMsg) GetPayload() isResultMsg_Payload {
+	if x != nil {
+		return x.Payload
+	}
+	return nil
+}
+
+func (x *ResultMsg) GetSmtpResult() *SmtpResult {
+	if x != nil {
+		if x, ok := x.Payload.(*ResultMsg_SmtpResult); ok {
+			return x.SmtpResult
+		}
+	}
+	return nil
+}
+
+type isResultMsg_Payload interface {
+	isResultMsg_Payload()
+}
+
+type ResultMsg_SmtpResult struct {
+	SmtpResult *SmtpResult `protobuf:"bytes,2,opt,name=smtp_result,json=smtpResult,proto3,oneof"`
+}
+
+func (*ResultMsg_SmtpResult) isResultMsg_Payload() {}
+
+type SmtpResult struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Accepted      bool                   `protobuf:"varint,1,opt,name=accepted,proto3" json:"accepted,omitempty"`
+	Status        string                 `protobuf:"bytes,2,opt,name=status,proto3" json:"status,omitempty"` // SENT | DEFERRED | FAILED
+	SmtpCode      string                 `protobuf:"bytes,3,opt,name=smtp_code,json=smtpCode,proto3" json:"smtp_code,omitempty"`
+	SmtpMessage   string                 `protobuf:"bytes,4,opt,name=smtp_message,json=smtpMessage,proto3" json:"smtp_message,omitempty"`
+	MxHost        string                 `protobuf:"bytes,5,opt,name=mx_host,json=mxHost,proto3" json:"mx_host,omitempty"`
+	Error         string                 `protobuf:"bytes,6,opt,name=error,proto3" json:"error,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SmtpResult) Reset() {
+	*x = SmtpResult{}
+	mi := &file_proto_mmhpb_miniminihub_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SmtpResult) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SmtpResult) ProtoMessage() {}
+
+func (x *SmtpResult) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_mmhpb_miniminihub_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SmtpResult.ProtoReflect.Descriptor instead.
+func (*SmtpResult) Descriptor() ([]byte, []int) {
+	return file_proto_mmhpb_miniminihub_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *SmtpResult) GetAccepted() bool {
+	if x != nil {
+		return x.Accepted
+	}
+	return false
+}
+
+func (x *SmtpResult) GetStatus() string {
+	if x != nil {
+		return x.Status
+	}
+	return ""
+}
+
+func (x *SmtpResult) GetSmtpCode() string {
+	if x != nil {
+		return x.SmtpCode
+	}
+	return ""
+}
+
+func (x *SmtpResult) GetSmtpMessage() string {
+	if x != nil {
+		return x.SmtpMessage
+	}
+	return ""
+}
+
+func (x *SmtpResult) GetMxHost() string {
+	if x != nil {
+		return x.MxHost
+	}
+	return ""
+}
+
+func (x *SmtpResult) GetError() string {
+	if x != nil {
+		return x.Error
+	}
+	return ""
+}
+
+type ResultAck struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Accepted      bool                   `protobuf:"varint,1,opt,name=accepted,proto3" json:"accepted,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ResultAck) Reset() {
+	*x = ResultAck{}
+	mi := &file_proto_mmhpb_miniminihub_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ResultAck) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ResultAck) ProtoMessage() {}
+
+func (x *ResultAck) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_mmhpb_miniminihub_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ResultAck.ProtoReflect.Descriptor instead.
+func (*ResultAck) Descriptor() ([]byte, []int) {
+	return file_proto_mmhpb_miniminihub_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *ResultAck) GetAccepted() bool {
+	if x != nil {
+		return x.Accepted
+	}
+	return false
+}
 
 // Phase 0 : commande no-op pour prouver le canal descendant.
 type PingCommand struct {
@@ -366,7 +669,7 @@ type PingCommand struct {
 
 func (x *PingCommand) Reset() {
 	*x = PingCommand{}
-	mi := &file_proto_mmhpb_miniminihub_proto_msgTypes[4]
+	mi := &file_proto_mmhpb_miniminihub_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -378,7 +681,7 @@ func (x *PingCommand) String() string {
 func (*PingCommand) ProtoMessage() {}
 
 func (x *PingCommand) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_mmhpb_miniminihub_proto_msgTypes[4]
+	mi := &file_proto_mmhpb_miniminihub_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -391,7 +694,7 @@ func (x *PingCommand) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PingCommand.ProtoReflect.Descriptor instead.
 func (*PingCommand) Descriptor() ([]byte, []int) {
-	return file_proto_mmhpb_miniminihub_proto_rawDescGZIP(), []int{4}
+	return file_proto_mmhpb_miniminihub_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *PingCommand) GetNote() string {
@@ -412,7 +715,7 @@ type RotateEgressCommand struct {
 
 func (x *RotateEgressCommand) Reset() {
 	*x = RotateEgressCommand{}
-	mi := &file_proto_mmhpb_miniminihub_proto_msgTypes[5]
+	mi := &file_proto_mmhpb_miniminihub_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -424,7 +727,7 @@ func (x *RotateEgressCommand) String() string {
 func (*RotateEgressCommand) ProtoMessage() {}
 
 func (x *RotateEgressCommand) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_mmhpb_miniminihub_proto_msgTypes[5]
+	mi := &file_proto_mmhpb_miniminihub_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -437,7 +740,7 @@ func (x *RotateEgressCommand) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RotateEgressCommand.ProtoReflect.Descriptor instead.
 func (*RotateEgressCommand) Descriptor() ([]byte, []int) {
-	return file_proto_mmhpb_miniminihub_proto_rawDescGZIP(), []int{5}
+	return file_proto_mmhpb_miniminihub_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *RotateEgressCommand) GetRequestId() string {
@@ -460,7 +763,7 @@ type EgressOpenCommand struct {
 
 func (x *EgressOpenCommand) Reset() {
 	*x = EgressOpenCommand{}
-	mi := &file_proto_mmhpb_miniminihub_proto_msgTypes[6]
+	mi := &file_proto_mmhpb_miniminihub_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -472,7 +775,7 @@ func (x *EgressOpenCommand) String() string {
 func (*EgressOpenCommand) ProtoMessage() {}
 
 func (x *EgressOpenCommand) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_mmhpb_miniminihub_proto_msgTypes[6]
+	mi := &file_proto_mmhpb_miniminihub_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -485,7 +788,7 @@ func (x *EgressOpenCommand) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EgressOpenCommand.ProtoReflect.Descriptor instead.
 func (*EgressOpenCommand) Descriptor() ([]byte, []int) {
-	return file_proto_mmhpb_miniminihub_proto_rawDescGZIP(), []int{6}
+	return file_proto_mmhpb_miniminihub_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *EgressOpenCommand) GetConnId() string {
@@ -529,7 +832,7 @@ type EgressFrame struct {
 
 func (x *EgressFrame) Reset() {
 	*x = EgressFrame{}
-	mi := &file_proto_mmhpb_miniminihub_proto_msgTypes[7]
+	mi := &file_proto_mmhpb_miniminihub_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -541,7 +844,7 @@ func (x *EgressFrame) String() string {
 func (*EgressFrame) ProtoMessage() {}
 
 func (x *EgressFrame) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_mmhpb_miniminihub_proto_msgTypes[7]
+	mi := &file_proto_mmhpb_miniminihub_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -554,7 +857,7 @@ func (x *EgressFrame) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EgressFrame.ProtoReflect.Descriptor instead.
 func (*EgressFrame) Descriptor() ([]byte, []int) {
-	return file_proto_mmhpb_miniminihub_proto_rawDescGZIP(), []int{7}
+	return file_proto_mmhpb_miniminihub_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *EgressFrame) GetConnId() string {
@@ -612,7 +915,7 @@ const file_proto_mmhpb_miniminihub_proto_rawDesc = "" +
 	"\btrace_id\x18\x04 \x01(\tR\atraceId\"H\n" +
 	"\vPollRequest\x12%\n" +
 	"\x0eminiminihub_id\x18\x01 \x01(\tR\rminiminihubId\x12\x12\n" +
-	"\x04slug\x18\x02 \x01(\tR\x04slug\"\x9a\x02\n" +
+	"\x04slug\x18\x02 \x01(\tR\x04slug\"\xda\x02\n" +
 	"\aCommand\x12\x1d\n" +
 	"\n" +
 	"command_id\x18\x01 \x01(\tR\tcommandId\x12 \n" +
@@ -622,8 +925,33 @@ const file_proto_mmhpb_miniminihub_proto_rawDesc = "" +
 	" \x01(\v2\x1b.miniminihub.v1.PingCommandH\x00R\x04ping\x12D\n" +
 	"\vegress_open\x18\v \x01(\v2!.miniminihub.v1.EgressOpenCommandH\x00R\n" +
 	"egressOpen\x12J\n" +
-	"\rrotate_egress\x18\f \x01(\v2#.miniminihub.v1.RotateEgressCommandH\x00R\frotateEgressB\t\n" +
-	"\apayload\"!\n" +
+	"\rrotate_egress\x18\f \x01(\v2#.miniminihub.v1.RotateEgressCommandH\x00R\frotateEgress\x12>\n" +
+	"\tsmtp_send\x18\r \x01(\v2\x1f.miniminihub.v1.SmtpSendCommandH\x00R\bsmtpSendB\t\n" +
+	"\apayload\"\xaa\x01\n" +
+	"\x0fSmtpSendCommand\x12\x1d\n" +
+	"\n" +
+	"request_id\x18\x01 \x01(\tR\trequestId\x12\x1b\n" +
+	"\tmail_from\x18\x02 \x01(\tR\bmailFrom\x12\x17\n" +
+	"\arcpt_to\x18\x03 \x03(\tR\x06rcptTo\x12\x12\n" +
+	"\x04data\x18\x04 \x01(\fR\x04data\x12\x1a\n" +
+	"\bstarttls\x18\x05 \x01(\bR\bstarttls\x12\x12\n" +
+	"\x04helo\x18\x06 \x01(\tR\x04helo\"t\n" +
+	"\tResultMsg\x12\x1d\n" +
+	"\n" +
+	"request_id\x18\x01 \x01(\tR\trequestId\x12=\n" +
+	"\vsmtp_result\x18\x02 \x01(\v2\x1a.miniminihub.v1.SmtpResultH\x00R\n" +
+	"smtpResultB\t\n" +
+	"\apayload\"\xaf\x01\n" +
+	"\n" +
+	"SmtpResult\x12\x1a\n" +
+	"\baccepted\x18\x01 \x01(\bR\baccepted\x12\x16\n" +
+	"\x06status\x18\x02 \x01(\tR\x06status\x12\x1b\n" +
+	"\tsmtp_code\x18\x03 \x01(\tR\bsmtpCode\x12!\n" +
+	"\fsmtp_message\x18\x04 \x01(\tR\vsmtpMessage\x12\x17\n" +
+	"\amx_host\x18\x05 \x01(\tR\x06mxHost\x12\x14\n" +
+	"\x05error\x18\x06 \x01(\tR\x05error\"'\n" +
+	"\tResultAck\x12\x1a\n" +
+	"\baccepted\x18\x01 \x01(\bR\baccepted\"!\n" +
 	"\vPingCommand\x12\x12\n" +
 	"\x04note\x18\x01 \x01(\tR\x04note\"4\n" +
 	"\x13RotateEgressCommand\x12\x1d\n" +
@@ -638,11 +966,13 @@ const file_proto_mmhpb_miniminihub_proto_rawDesc = "" +
 	"\aconn_id\x18\x01 \x01(\tR\x06connId\x12\x12\n" +
 	"\x04data\x18\x02 \x01(\fR\x04data\x12\x14\n" +
 	"\x05close\x18\x03 \x01(\bR\x05close\x12\x14\n" +
-	"\x05error\x18\x04 \x01(\tR\x05error2\xfb\x01\n" +
+	"\x05error\x18\x04 \x01(\tR\x05error2\xbf\x02\n" +
 	"\x12MiniMiniHubControl\x12P\n" +
 	"\tHeartbeat\x12 .miniminihub.v1.HeartbeatRequest\x1a!.miniminihub.v1.HeartbeatResponse\x12E\n" +
 	"\vPollCommand\x12\x1b.miniminihub.v1.PollRequest\x1a\x17.miniminihub.v1.Command0\x01\x12L\n" +
-	"\fEgressStream\x12\x1b.miniminihub.v1.EgressFrame\x1a\x1b.miniminihub.v1.EgressFrame(\x010\x01B1Z/github.com/jmlmvi/miniminihub/proto/mmhpb;mmhpbb\x06proto3"
+	"\fEgressStream\x12\x1b.miniminihub.v1.EgressFrame\x1a\x1b.miniminihub.v1.EgressFrame(\x010\x01\x12B\n" +
+	"\n" +
+	"PushResult\x12\x19.miniminihub.v1.ResultMsg\x1a\x19.miniminihub.v1.ResultAckB1Z/github.com/jmlmvi/miniminihub/proto/mmhpb;mmhpbb\x06proto3"
 
 var (
 	file_proto_mmhpb_miniminihub_proto_rawDescOnce sync.Once
@@ -656,34 +986,42 @@ func file_proto_mmhpb_miniminihub_proto_rawDescGZIP() []byte {
 	return file_proto_mmhpb_miniminihub_proto_rawDescData
 }
 
-var file_proto_mmhpb_miniminihub_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
+var file_proto_mmhpb_miniminihub_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
 var file_proto_mmhpb_miniminihub_proto_goTypes = []any{
 	(*HeartbeatRequest)(nil),    // 0: miniminihub.v1.HeartbeatRequest
 	(*HeartbeatResponse)(nil),   // 1: miniminihub.v1.HeartbeatResponse
 	(*PollRequest)(nil),         // 2: miniminihub.v1.PollRequest
 	(*Command)(nil),             // 3: miniminihub.v1.Command
-	(*PingCommand)(nil),         // 4: miniminihub.v1.PingCommand
-	(*RotateEgressCommand)(nil), // 5: miniminihub.v1.RotateEgressCommand
-	(*EgressOpenCommand)(nil),   // 6: miniminihub.v1.EgressOpenCommand
-	(*EgressFrame)(nil),         // 7: miniminihub.v1.EgressFrame
-	nil,                         // 8: miniminihub.v1.HeartbeatRequest.ConnsByServiceEntry
+	(*SmtpSendCommand)(nil),     // 4: miniminihub.v1.SmtpSendCommand
+	(*ResultMsg)(nil),           // 5: miniminihub.v1.ResultMsg
+	(*SmtpResult)(nil),          // 6: miniminihub.v1.SmtpResult
+	(*ResultAck)(nil),           // 7: miniminihub.v1.ResultAck
+	(*PingCommand)(nil),         // 8: miniminihub.v1.PingCommand
+	(*RotateEgressCommand)(nil), // 9: miniminihub.v1.RotateEgressCommand
+	(*EgressOpenCommand)(nil),   // 10: miniminihub.v1.EgressOpenCommand
+	(*EgressFrame)(nil),         // 11: miniminihub.v1.EgressFrame
+	nil,                         // 12: miniminihub.v1.HeartbeatRequest.ConnsByServiceEntry
 }
 var file_proto_mmhpb_miniminihub_proto_depIdxs = []int32{
-	8, // 0: miniminihub.v1.HeartbeatRequest.conns_by_service:type_name -> miniminihub.v1.HeartbeatRequest.ConnsByServiceEntry
-	4, // 1: miniminihub.v1.Command.ping:type_name -> miniminihub.v1.PingCommand
-	6, // 2: miniminihub.v1.Command.egress_open:type_name -> miniminihub.v1.EgressOpenCommand
-	5, // 3: miniminihub.v1.Command.rotate_egress:type_name -> miniminihub.v1.RotateEgressCommand
-	0, // 4: miniminihub.v1.MiniMiniHubControl.Heartbeat:input_type -> miniminihub.v1.HeartbeatRequest
-	2, // 5: miniminihub.v1.MiniMiniHubControl.PollCommand:input_type -> miniminihub.v1.PollRequest
-	7, // 6: miniminihub.v1.MiniMiniHubControl.EgressStream:input_type -> miniminihub.v1.EgressFrame
-	1, // 7: miniminihub.v1.MiniMiniHubControl.Heartbeat:output_type -> miniminihub.v1.HeartbeatResponse
-	3, // 8: miniminihub.v1.MiniMiniHubControl.PollCommand:output_type -> miniminihub.v1.Command
-	7, // 9: miniminihub.v1.MiniMiniHubControl.EgressStream:output_type -> miniminihub.v1.EgressFrame
-	7, // [7:10] is the sub-list for method output_type
-	4, // [4:7] is the sub-list for method input_type
-	4, // [4:4] is the sub-list for extension type_name
-	4, // [4:4] is the sub-list for extension extendee
-	0, // [0:4] is the sub-list for field type_name
+	12, // 0: miniminihub.v1.HeartbeatRequest.conns_by_service:type_name -> miniminihub.v1.HeartbeatRequest.ConnsByServiceEntry
+	8,  // 1: miniminihub.v1.Command.ping:type_name -> miniminihub.v1.PingCommand
+	10, // 2: miniminihub.v1.Command.egress_open:type_name -> miniminihub.v1.EgressOpenCommand
+	9,  // 3: miniminihub.v1.Command.rotate_egress:type_name -> miniminihub.v1.RotateEgressCommand
+	4,  // 4: miniminihub.v1.Command.smtp_send:type_name -> miniminihub.v1.SmtpSendCommand
+	6,  // 5: miniminihub.v1.ResultMsg.smtp_result:type_name -> miniminihub.v1.SmtpResult
+	0,  // 6: miniminihub.v1.MiniMiniHubControl.Heartbeat:input_type -> miniminihub.v1.HeartbeatRequest
+	2,  // 7: miniminihub.v1.MiniMiniHubControl.PollCommand:input_type -> miniminihub.v1.PollRequest
+	11, // 8: miniminihub.v1.MiniMiniHubControl.EgressStream:input_type -> miniminihub.v1.EgressFrame
+	5,  // 9: miniminihub.v1.MiniMiniHubControl.PushResult:input_type -> miniminihub.v1.ResultMsg
+	1,  // 10: miniminihub.v1.MiniMiniHubControl.Heartbeat:output_type -> miniminihub.v1.HeartbeatResponse
+	3,  // 11: miniminihub.v1.MiniMiniHubControl.PollCommand:output_type -> miniminihub.v1.Command
+	11, // 12: miniminihub.v1.MiniMiniHubControl.EgressStream:output_type -> miniminihub.v1.EgressFrame
+	7,  // 13: miniminihub.v1.MiniMiniHubControl.PushResult:output_type -> miniminihub.v1.ResultAck
+	10, // [10:14] is the sub-list for method output_type
+	6,  // [6:10] is the sub-list for method input_type
+	6,  // [6:6] is the sub-list for extension type_name
+	6,  // [6:6] is the sub-list for extension extendee
+	0,  // [0:6] is the sub-list for field type_name
 }
 
 func init() { file_proto_mmhpb_miniminihub_proto_init() }
@@ -695,6 +1033,10 @@ func file_proto_mmhpb_miniminihub_proto_init() {
 		(*Command_Ping)(nil),
 		(*Command_EgressOpen)(nil),
 		(*Command_RotateEgress)(nil),
+		(*Command_SmtpSend)(nil),
+	}
+	file_proto_mmhpb_miniminihub_proto_msgTypes[5].OneofWrappers = []any{
+		(*ResultMsg_SmtpResult)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -702,7 +1044,7 @@ func file_proto_mmhpb_miniminihub_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_mmhpb_miniminihub_proto_rawDesc), len(file_proto_mmhpb_miniminihub_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   9,
+			NumMessages:   13,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

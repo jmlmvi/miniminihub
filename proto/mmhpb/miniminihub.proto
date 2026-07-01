@@ -20,6 +20,10 @@ service MiniMiniHubControl {
   // Proxy de sortie (D-17) : l'enfant ouvre ce flux bidi pour relayer une
   // connexion d'égress. 1er frame = conn_id ; ensuite bytes dans les 2 sens.
   rpc EgressStream(stream EgressFrame) returns (stream EgressFrame);
+
+  // V002 P3 : l'enfant remonte le résultat d'une commande async (envoi SMTP),
+  // corrélé par request_id. Unary sortant.
+  rpc PushResult(ResultMsg) returns (ResultAck);
 }
 
 message HeartbeatRequest {
@@ -53,7 +57,38 @@ message Command {
     PingCommand         ping          = 10;
     EgressOpenCommand   egress_open   = 11;
     RotateEgressCommand rotate_egress = 12; // V002 P2 : NEWNYM — rotation de l'IP de sortie TOR
+    SmtpSendCommand     smtp_send     = 13; // V002 P3 : remise MX directe d'un message
   }
+}
+
+// V002 P3 — remise MX directe (port 25) d'un message par l'enfant (rôle smtp).
+message SmtpSendCommand {
+  string request_id       = 1;
+  string mail_from        = 2;
+  repeated string rcpt_to = 3;
+  bytes  data             = 4;
+  bool   starttls         = 5;
+  string helo             = 6;
+}
+
+message ResultMsg {
+  string request_id = 1;
+  oneof payload {
+    SmtpResult smtp_result = 2;
+  }
+}
+
+message SmtpResult {
+  bool   accepted     = 1;
+  string status       = 2; // SENT | DEFERRED | FAILED
+  string smtp_code    = 3;
+  string smtp_message = 4;
+  string mx_host      = 5;
+  string error        = 6;
+}
+
+message ResultAck {
+  bool accepted = 1;
 }
 
 // Phase 0 : commande no-op pour prouver le canal descendant.

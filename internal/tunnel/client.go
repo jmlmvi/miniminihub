@@ -119,6 +119,38 @@ func (c *Client) Heartbeat(ctx context.Context, seq uint64, load Load) (*pb.Hear
 	return resp, nil
 }
 
+// SmtpResultData = résultat d'une remise SMTP à remonter au parent (V002 P3).
+type SmtpResultData struct {
+	RequestID   string
+	Accepted    bool
+	Status      string // SENT | DEFERRED | FAILED
+	SMTPCode    string
+	SMTPMessage string
+	MXHost      string
+	Error       string
+}
+
+// PushSmtpResult remonte le résultat d'une remise SMTP au parent (unary, corrélé request_id).
+func (c *Client) PushSmtpResult(ctx context.Context, r SmtpResultData) error {
+	cctx, cancel := context.WithTimeout(ctx, 15*time.Second)
+	defer cancel()
+	_, err := c.ctrl.PushResult(cctx, &pb.ResultMsg{
+		RequestId: r.RequestID,
+		Payload: &pb.ResultMsg_SmtpResult{SmtpResult: &pb.SmtpResult{
+			Accepted:    r.Accepted,
+			Status:      r.Status,
+			SmtpCode:    r.SMTPCode,
+			SmtpMessage: r.SMTPMessage,
+			MxHost:      r.MXHost,
+			Error:       r.Error,
+		}},
+	})
+	if err != nil {
+		return fmt.Errorf("push smtp result req=%s: %w", r.RequestID, err)
+	}
+	return nil
+}
+
 // EgressStream ouvre le flux bidi d'égress vers le parent (proxy de sortie, D-17).
 func (c *Client) EgressStream(ctx context.Context) (pb.MiniMiniHubControl_EgressStreamClient, error) {
 	stream, err := c.ctrl.EgressStream(ctx)
